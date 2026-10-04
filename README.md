@@ -179,4 +179,4 @@ qrshield/
 ├── uploads/
 │
 ├── .gitignore
-└── README.md
+└── README.mdResearch study phase planned after security hardening.

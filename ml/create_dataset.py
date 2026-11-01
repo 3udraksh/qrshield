@@ -1,3 +1,13 @@
+"""
+QRShield ML Dataset Generation Utility
+
+NOTE: This script generates a small, synthetic dataset based on handcrafted seed
+URLs (8 safe, 8 suspicious). It serves as an educational proof-of-concept
+demonstrating the feature-extraction pipeline and Random Forest model training.
+It is NOT representative of wide-scale web-threat distributions and must not
+be regenerated during regression test execution.
+"""
+
 import csv
 import random
 

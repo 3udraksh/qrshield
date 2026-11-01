@@ -1,3 +1,13 @@
+"""
+QRShield Random Forest Model Training Script
+
+NOTE: Trains an offline 100-estimator RandomForestClassifier on `ml/dataset.csv`
+and serializes the artifact to `ml/qrshield_model.joblib`. This model is trained
+on synthetic demonstration data for dual-engine heuristic consensus demonstration;
+in production, larger empirical threat datasets (e.g. PhishTank, Alexa Top 1M)
+would be required for generalized out-of-sample inference.
+"""
+
 import pandas as pd
 import joblib
 from sklearn.ensemble import RandomForestClassifier

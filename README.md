@@ -1,182 +1,223 @@
 # QRShield
 
-## Explainable Phishing Detection for QR-Based Campus Scams
+## Explainable Defensive Security Analysis Engine for QR-Based Content
 
-QRShield is a defensive cybersecurity prototype designed to analyze URLs embedded in QR codes before users interact with the destination.
+QRShield is an open-source, defensive cybersecurity analysis platform engineered to inspect, evaluate, and explain threats embedded in QR codes before users interact with untrusted destinations.
 
-The project focuses on QR-based social engineering, where the actual destination URL is hidden behind a QR code and users may scan it without being able to visually inspect the link beforehand.
-
-QRShield combines QR-code decoding with explainable URL intelligence to identify suspicious characteristics and present them as a human-readable security assessment.
+By synthesizing QR computer vision decoding, lexical heuristics, DNS/network intelligence, direct TLS certificate validation with DNS-pinning SSRF protection, HTTP redirect graph analysis, reputation intelligence, machine-learning consensus, and LLM-ready explainability contracts, QRShield delivers transparent, auditable security verdicts.
 
 ---
 
-## Problem
-
-QR codes are increasingly used for registrations, notices, payments, authentication, and online services.
-
-A malicious QR code can redirect users toward a phishing or fraudulent destination. Because the URL is hidden inside the QR code, users may not recognize suspicious characteristics before opening it.
-
-This creates an opportunity for social engineering attacks in campuses, public spaces, advertisements, and other environments where QR codes are trusted.
-
----
-
-## Solution
-
-QRShield provides a local analysis pipeline that:
-
-1. Accepts a URL or QR-code image.
-2. Extracts the destination URL from the QR code.
-3. Normalizes and analyzes the URL.
-4. Examines multiple structural and lexical characteristics.
-5. Calculates an explainable heuristic risk score.
-6. Identifies the indicators contributing to the assessment.
-7. Presents a human-readable security recommendation.
-
-The goal is not simply to produce a number, but to explain **why a URL received a particular risk assessment.**
-
----
-
-## Current Detection Capabilities
-
-### URL Intelligence
-
-QRShield currently analyzes characteristics including:
-
-- HTTPS usage
-- IP-address destinations
-- URL length
-- Hostname length
-- Number of subdomains
-- URL path depth
-- Query-parameter count
-- URL fragments
-- `@` symbol usage
-- Percent-encoded characters
-- Decoded URL differences
-- Suspicious keywords
-- Hyphen-heavy hostnames
-- Digit-heavy hostnames
-- Suspicious-looking Top-Level Domains (TLDs)
-- Hostname entropy
-
-These indicators are combined using heuristic rules to produce an explainable risk assessment.
-
----
-
-## Explainable Findings
-
-Instead of displaying only a risk score, QRShield records the characteristics that contributed to the assessment.
-
-Example categories include:
-
-- **LOW** — indicator requiring little or no additional concern
-- **MEDIUM** — characteristic requiring additional verification
-- **HIGH** — stronger suspicious characteristic
-
-The exact assessment depends on the combination of indicators detected by the current heuristic engine.
-
----
-
-## Risk Levels
-
-### LOW RISK
-No obvious suspicious indicators were detected by the current rules. This does **not** guarantee that the destination is safe.
-
-### CAUTION
-One or more characteristics require additional verification before interacting with the destination.
-
-### HIGH RISK
-Multiple suspicious characteristics were detected by the current heuristic rules. A high-risk result is an indication for caution, not proof that a website is malicious.
-
----
-
-## Detection Pipeline
+## 1. System Architecture
 
 ```text
-                QR Code Image
-                     │
-                     ▼
-                QR Decoder
-                     │
-                     ▼
-               Extracted URL
-                     │
-                     ▼
-              URL Normalization
-                     │
-                     ▼
-            URL Intelligence Engine
-                     │
-          ┌──────────┴──────────┐
-          ▼                     ▼
-    URL Characteristics    Suspicious Indicators
-          │                     │
-          └──────────┬──────────┘
-                     ▼
-              Heuristic Rules
-                     │
-                     ▼
-                 Risk Score
-                     │
-                     ▼
-             Explainable Findings
-                     │
-                     ▼
-           Security Recommendation
+               ┌────────────────────────────────────────────────────────┐
+               │                    Input Surface                       │
+               │         - Raw Destination URL / Payload                │
+               │         - Multipart QR Image (PNG, JPG, JPEG)          │
+               └──────────────────────────┬─────────────────────────────┘
+                                          │
+                                          ▼
+               ┌────────────────────────────────────────────────────────┐
+               │                     Web Presentation                   │
+               │     Flask Application (app.py) & Modular Services      │
+               │  - ScanService: In-Memory OpenCV QR Decoding           │
+               │  - HistoryService: Telemetry & Corruption Recovery     │
+               │  - ReportService: Bounded Scan Cache & Isolated Export │
+               └──────────────────────────┬─────────────────────────────┘
+                                          │
+                                          ▼
+               ┌────────────────────────────────────────────────────────┐
+               │          qrshield Orchestrator (analyze_url)           │
+               └───────┬────────────┬─────────────┬─────────────┬───────┘
+                       │            │             │             │
+        ┌──────────────┴──┐  ┌──────┴──────┐  ┌───┴──────────┐  │
+        ▼                 ▼  ▼             ▼  ▼              ▼  ▼
+ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────────┐
+ │qrshield.     │ │qrshield.     │ │qrshield.     │ │qrshield.       │
+ │content_types │ │lexical       │ │network       │ │redirects       │
+ │- URL, Wi-Fi, │ │- Entropy     │ │- SSRF Guard  │ │- Loop Detect   │
+ │  vCard, SMS, │ │- Layer Dec.  │ │- DNS Intel   │ │- Downgrade Det │
+ │  Email, Text │ │- Punycode    │ │- TLS Pinning │ │- Cross-Domain  │
+ └──────────────┘ └──────────────┘ └──────────────┘ └────────────────┘
+        │                 │                │                 │
+        └──────────────┬──┴────────────────┴──┬──────────────┘
+                       │                      │
+                       ▼                      ▼
+               ┌────────────────┐     ┌────────────────┐
+               │qrshield.       │     │qrshield.       │
+               │reputation      │     │ml              │
+               │- URLhaus API   │     │- 9-Feature RF  │
+               │- Safe Browsing │     │- Consensus Eng │
+               └───────┬────────┘     └───────┬────────┘
+                       │                      │
+                       └───────────┬──────────┘
+                                   │
+                                   ▼
+               ┌────────────────────────────────────────────────┐
+               │            qrshield.explainability             │
+               │  - Multi-tier Risk Engine (Score & Severity)   │
+               │  - Explainability Contract (Structured Audit)  │
+               │  - AI Context & Guidance Synthesis             │
+               │  - JSON Security Report Serializer             │
+               └────────────────────────────────────────────────┘
+```
 
+---
 
+## 2. Core Detection Subsystems
 
-Example Use Case
-A campus user receives a QR code claiming to provide an urgent university account verification or scholarship service.
+### 2.1 Lexical & Structural URL Intelligence (`qrshield.lexical`)
+- **Shannon Entropy Analysis**: Detects pseudo-random and algorithmically generated subdomains and paths (`calculate_entropy`).
+- **Multi-layer Recursive Percent-Unquoting**: Recursively unwraps double or multi-layer percent-encoded evasion payloads (`decode_url_layers`).
+- **Punycode / IDN Detection**: Flags Internationalized Domain Names containing `xn--` indicators commonly abused for visual homoglyph spoofing (`analyze_punycode`).
+- **Port Inspection**: Identifies non-standard explicit destination ports (e.g., `:8080`, `:8443`).
+- **Credential & Deception Parsing**: Detects userinfo `@` deception patterns where fake domains mimic legitimacy, and suspicious path/query parameters (`login`, `verify`, `token`).
 
-Instead of immediately scanning and visiting the destination, the QR code can be submitted to QRShield for analysis.
+### 2.2 Content-Type Parser (`qrshield.content_types`)
+Inspects raw QR payloads and extracts embedded targets across diverse communication protocols:
+- `URL` (HTTP/HTTPS schemes)
+- `WIFI` (`WIFI:S:...;T:...;P:...;;` network configurations with open-network detection)
+- `VCARD` (Electronic business cards with embedded website URL extraction)
+- `EMAIL` (`mailto:` schemes with body link extraction)
+- `SMS` / `PHONE` (`sms:` and `tel:` schemes with embedded URI extraction)
 
-QRShield extracts the URL and examines characteristics such as:
+### 2.3 SSRF Hardening & Network Transport (`qrshield.network`)
+Prevents Server-Side Request Forgery (SSRF) and DNS rebinding attacks:
+- **Strict Destination Validation**: Blocks direct non-public IP literals and resolved hostnames mapping to loopback (`127.0.0.0/8`, `::1`), RFC 1918 private subnets (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), link-local/cloud-metadata (`169.254.169.254`), documentation networks (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`), multicast, and carrier-grade NAT.
+- **DNS Pinning**: `get_tls_certificate()` and `get_tls_connection()` pre-validate resolved IP addresses against SSRF filters, open raw TCP sockets directly to the validated IP, and bind the original hostname strictly to the TLS Server Name Indication (SNI) extension (`server_hostname=sni_hostname`). This prevents time-of-check to time-of-use (TOCTOU) DNS rebinding attacks.
 
-HTTP instead of HTTPS
+### 2.4 Redirect Graph & Protocol Analysis (`qrshield.redirects`)
+- **Hop-by-hop HTTP Inspection**: Uses custom `NoRedirectHandler` to trace redirection chains step-by-step.
+- **Safety Checks**: Terminates immediately upon loop detection or encountering non-public destination IPs.
+- **Protocol Downgrade Detection**: Flags HTTPS-to-HTTP downgrade transitions as high-severity risks.
+- **Cross-Domain Auditing**: Quantifies multi-domain redirection hops frequently observed in traffic distribution systems (TDS).
 
-Long URL
+### 2.5 Machine Learning & Consensus Scoring (`qrshield.ml`)
+- **Model**: Offline `RandomForestClassifier` trained with scikit-learn (`ml/qrshield_model.joblib`).
+- **Feature Vector**: 9 deterministic lexical signals extracted in exact order:
+  1. `URL Length`
+  2. `Hostname Length`
+  3. `Subdomain Count`
+  4. `Path Depth`
+  5. `Query Parameters`
+  6. `Percent Encoded Characters`
+  7. `Hostname Hyphens`
+  8. `Hostname Digits`
+  9. `Hostname Entropy`
+- **Consensus Logic**: Reconciles rule-based heuristic risk score with ML classifier predictions:
+  - `AGREE_SAFE` / `AGREE_SUSPICIOUS`: Consensus between engines reinforces confidence.
+  - `DISAGREE_ML_HIGH` / `DISAGREE_HEURISTIC_HIGH`: Escalates ambiguous findings for explicit human-in-the-loop audit.
 
-Suspicious keywords
+---
 
-Deep URL path
+## 3. High-Performance Ingestion & Export
 
-Unusual hostname structure
+### In-Memory QR Decoding
+Uploaded QR images are decoded directly from memory buffers using `cv2.imdecode(np.frombuffer(file_bytes, np.uint8), cv2.IMREAD_COLOR)`. Temporary disk file artifacts in `uploads/` are completely eliminated.
 
-Suspicious-looking TLD
+### Cached Report Generation
+`app.py` implements a thread-safe, bounded in-memory cache (`ReportService`). Exporting a security report for an already analyzed destination reuses pre-computed audit results rather than re-running network, TLS, DNS, or ML analysis. Reports are serialized into isolated temporary files and deleted immediately post-transmission via Flask `@after_this_request`.
 
-The application then presents the detected indicators alongside the risk assessment, allowing the user to understand what triggered the warning.
+---
 
-Technology Stack
-Python — Analysis engine and application logic
+## 4. Project Structure
 
-Flask — Local web application framework
-
-OpenCV — QR-code detection and decoding
-
-HTML5 & CSS3 — Interface presentation and styling
-
-Git — Version control
-
-PROJECT STRUCTURE
-
+```text
 qrshield/
+├── app.py                     # Flask application entry point and HTTP route handlers
+├── analyzer.py                # Backward-compatible facade delegating to qrshield package
 │
-├── app.py
-├── analyzer.py
+├── qrshield/                  # Modular Core Engine
+│   ├── __init__.py            # Public API exports
+│   ├── compat.py              # Internal dynamic dispatch compatibility helper
+│   ├── constants.py           # Engine constants, thresholds, and keyword registries
+│   ├── content_types.py       # QR payload scheme decoders (URL, Wi-Fi, vCard, SMS, Email)
+│   ├── explainability.py      # Risk scoring engine, evidence aggregation, and report builder
+│   ├── lexical.py             # Shannon entropy, unquoting, Punycode, and port analyzers
+│   ├── ml.py                  # ML feature extraction, model loading, and consensus scoring
+│   ├── network.py             # SSRF prevention, DNS pinning, and TLS inspection
+│   ├── orchestrator.py        # Complete analyze_url analysis pipeline orchestration
+│   ├── redirects.py           # Redirect chain inspection and loop detection
+│   ├── reputation.py          # Threat intelligence query wrappers (URLhaus, Safe Browsing)
+│   └── services.py            # Application services (ScanService, HistoryService, ReportService)
 │
-├── templates/
-│   └── index.html
+├── ml/                        # Machine Learning Pipeline
+│   ├── dataset.csv            # Synthetic training demonstration dataset
+│   ├── qrshield_model.joblib  # Serialized Random Forest classifier
+│   ├── create_dataset.py      # Dataset generation script (reference only)
+│   └── train_model.py         # Model training script (reference only)
 │
-├── static/
-│   └── style.css
+├── templates/                 # Jinja2 HTML Templates
+│   ├── index.html             # Interactive scan interface and explainability view
+│   └── dashboard.html         # Historical scan telemetry and risk metrics dashboard
 │
-├── demo_qr/
-│   ├── safe_qr.png
-│   ├── suspicious_qr.png
+├── static/                    # Frontend Assets
+│   └── style.css              # Cyber-defensive interface styling
+│
+├── demo_qr/                   # Demonstration Fixtures
+│   ├── campus_safe.png        # Valid campus HTTPS QR fixture
 │   └── campus_phishing_demo.png
 │
-├── uploads/
+├── tests/                     # Frozen Tier 1 Baseline Regression Suite (66 tests)
+│   ├── test_base.py           # Isolated test harness with zero-network fixtures
+│   ├── test_golden_master.py  # 12 deterministic Golden Master characterization cases
+│   ├── test_lexical.py        # Lexical analysis unit tests
+│   ├── test_content_types.py  # Content type parser unit tests
+│   ├── test_ssrf_validator.py # SSRF and IP blocking unit tests
+│   ├── test_redirects.py      # Redirect engine unit tests
+│   ├── test_ml_consensus.py   # Machine learning consensus unit tests
+│   ├── test_explainability_contract.py # Contract schema validation tests
+│   ├── test_history.py        # History persistence and corruption recovery tests
+│   └── test_routes.py         # Web endpoints integration tests
 │
-├── .gitignore
-└── README.mdResearch study phase planned after security hardening.
+└── tests_tier2/               # Tier 2 Behavioral & Security Suites (9 tests)
+    ├── test_tier2_security.py             # SSRF blocking, DNS pinning & transport tests
+    └── test_tier2_ingestion_and_export.py # In-memory decoding & export cache tests
+```
+
+---
+
+## 5. Verification & Testing
+
+The repository maintains strict two-tier test isolation. All tests run deterministically with zero network emissions.
+
+### 5.1 Run Tier 1 Baseline Regression Suite (66 tests)
+```bash
+python3 -m unittest discover -s tests -p "test_*.py" -v
+```
+Verifies complete preservation of legacy behavior across:
+- GM-01 through GM-12 Golden Master contracts (scores, findings, risk levels, explainability validation)
+- SSRF non-public IP blocking (IPv4, IPv6, loopback, private RFC 1918, link-local)
+- History persistence, 20-item capping, and JSON corruption recovery
+- In-memory route dispatch and error handling
+
+### 5.2 Run Tier 2 Security & Architecture Suite (9 tests)
+```bash
+python3 -m unittest discover -s tests_tier2 -p "test_*.py" -v
+```
+Verifies architectural refactoring improvements:
+- SSRF validation and socket DNS pinning during TLS inspection
+- Elimination of temporary disk writes during QR image ingestion
+- Thread-safe report exports without re-analyzing cached destinations
+
+---
+
+## 6. Running the Web Application
+
+```bash
+# 1. Activate virtual environment
+source .venv/bin/activate
+
+# 2. Run Flask server
+python3 app.py
+```
+Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
+
+---
+
+## 7. Known Limitations & Research Boundaries
+
+1. **Synthetic Demonstration Model**: The included `ml/qrshield_model.joblib` artifact is trained on a small synthetic demonstration dataset (`ml/dataset.csv`). It is designed to illustrate the feature extraction and dual-engine consensus workflow, not for out-of-sample real-world threat classification without retraining on larger empirical corpora (e.g., PhishTank, URLhaus bulk feeds).
+2. **Third-Party Reputation Feeds**: In default offline testing, URLhaus and Google Safe Browsing lookups are mocked or bypassed. Live production deployment requires configuring active API keys in environment variables (`URLHAUS_API_KEY`, `SAFE_BROWSING_API_KEY`).
+3. **AI Explanations**: The Gemini-backed explanation engine requires a valid `GEMINI_API_KEY`. When unconfigured, QRShield falls back seamlessly to deterministic rule-based explainability summaries.

@@ -1,7 +1,7 @@
 import csv
 import random
 
-from analyzer import analyze_url
+from analyzer import analyze_url, extract_ml_features
 
 
 SAFE_URLS = [
@@ -41,34 +41,6 @@ FEATURES = [
 ]
 
 
-def feature_map(features):
-
-    return {
-        feature.get("name"): feature.get("value")
-        for feature in features
-        if isinstance(feature, dict)
-    }
-
-
-def extract_features(result):
-
-    features = feature_map(
-        result.get("features", [])
-    )
-
-    return [
-        features.get("URL Length", 0),
-        features.get("Hostname Length", 0),
-        features.get("Subdomain Count", 0),
-        features.get("Path Depth", 0),
-        features.get("Query Parameters", 0),
-        features.get("Percent Encoded Characters", 0),
-        features.get("Hostname Hyphens", 0),
-        features.get("Hostname Digits", 0),
-        features.get("Hostname Entropy", 0)
-    ]
-
-
 def generate_dataset():
 
     rows = []
@@ -78,7 +50,7 @@ def generate_dataset():
         result = analyze_url(url)
 
         rows.append(
-            extract_features(result) + [0]
+            extract_ml_features(result) + [0]
         )
 
     for url in SUSPICIOUS_URLS:
@@ -86,7 +58,7 @@ def generate_dataset():
         result = analyze_url(url)
 
         rows.append(
-            extract_features(result) + [1]
+            extract_ml_features(result) + [1]
         )
 
     random.shuffle(rows)

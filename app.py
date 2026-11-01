@@ -1,11 +1,13 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, after_this_request
 
 from analyzer import analyze_url, export_security_report
 
 import cv2
+import numpy as np
 import os
 import uuid
 import json
+import tempfile
 from datetime import datetime
 
 
@@ -17,6 +19,27 @@ ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 
 HISTORY_FILE = "scan_history.json"
 MAX_HISTORY = 20
+
+# Bounded in-memory cache for recent scan results to avoid redundant re-analysis
+_SCAN_RESULT_CACHE = {}
+_MAX_CACHE_SIZE = 50
+
+
+def _cache_scan_result(result):
+    """Cache the most recent scan result by URL/content."""
+    if not isinstance(result, dict):
+        return
+    url = result.get("url")
+    if url:
+        if len(_SCAN_RESULT_CACHE) >= _MAX_CACHE_SIZE:
+            oldest_key = next(iter(_SCAN_RESULT_CACHE))
+            _SCAN_RESULT_CACHE.pop(oldest_key, None)
+        _SCAN_RESULT_CACHE[url] = result
+
+
+def _get_cached_scan_result(content):
+    """Retrieve a pre-computed scan result if available."""
+    return _SCAN_RESULT_CACHE.get(content)
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -304,6 +327,7 @@ def index():
             result = analyze_url(url)
 
             save_scan_history(result)
+            _cache_scan_result(result)
 
 
         # ----------------------------------------------
@@ -350,18 +374,9 @@ def index():
 
                 else:
 
-                    filename = (
-                        str(uuid.uuid4()) + extension
-                    )
-
-                    filepath = os.path.join(
-                        UPLOAD_FOLDER,
-                        filename
-                    )
-
-                    qr_file.save(filepath)
-
-                    image = cv2.imread(filepath)
+                    file_bytes = qr_file.read()
+                    nparr = np.frombuffer(file_bytes, np.uint8)
+                    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
                     if image is None:
 
@@ -369,8 +384,6 @@ def index():
                             "The uploaded file is not a valid "
                             "readable image."
                         )
-
-                        os.remove(filepath)
 
                     else:
 
@@ -403,6 +416,7 @@ def index():
                                 )
 
                                 save_scan_history(result)
+                                _cache_scan_result(result)
 
                             else:
 
@@ -439,12 +453,6 @@ def index():
                                 "An unexpected error occurred "
                                 "while processing the QR code."
                             )
-
-                        finally:
-
-                            if os.path.exists(filepath):
-
-                                os.remove(filepath)
 
     # ----------------------------------------------
     # Load scan history
@@ -486,14 +494,34 @@ def export_report():
     if not content:
         return "No analysis result available.", 400
 
-    result = analyze_url(content)
+    result = _get_cached_scan_result(content)
 
-    filepath = "qrshield_security_report.json"
+    if result is None:
+        result = analyze_url(content)
+        _cache_scan_result(result)
+
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        prefix="qrshield_report_",
+        suffix=".json",
+        delete=False,
+        encoding="utf-8"
+    ) as temp_file:
+        filepath = temp_file.name
 
     export_security_report(
         result,
         filepath
     )
+
+    @after_this_request
+    def cleanup_report_file(response):
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except OSError:
+            pass
+        return response
 
     return send_file(
         filepath,

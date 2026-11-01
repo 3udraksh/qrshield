@@ -1,5 +1,3 @@
-from pyexpat import features
-from unittest import result
 from google import genai
 import urllib.parse
 import pandas as pd
@@ -766,17 +764,28 @@ def get_tls_connection(hostname, port=443, timeout=5):
             "error": "No hostname provided"
         }
 
+    target_check = is_unsafe_network_target(hostname)
+    if target_check["unsafe"]:
+        return {
+            "connected": False,
+            "hostname": hostname,
+            "port": port,
+            "error": f"Blocked unsafe network target: {target_check['reason']}"
+        }
+
     try:
         context = ssl.create_default_context()
+        target_ip = target_check["addresses"][0] if target_check.get("addresses") else hostname
+        sni_hostname = None if is_ip_address(hostname) else hostname
 
         with socket.create_connection(
-            (hostname, port),
+            (target_ip, port),
             timeout=timeout
         ) as sock:
 
             with context.wrap_socket(
                 sock,
-                server_hostname=hostname
+                server_hostname=sni_hostname
             ):
 
                 return {
@@ -837,6 +846,16 @@ def get_tls_certificate(hostname, port=443, timeout=5):
             "error": "No hostname provided"
         }
 
+    target_check = is_unsafe_network_target(hostname)
+    if target_check["unsafe"]:
+        return {
+            "retrieved": False,
+            "hostname": hostname,
+            "port": port,
+            "certificate": None,
+            "error": f"Blocked unsafe network target: {target_check['reason']}"
+        }
+
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
@@ -845,14 +864,17 @@ def get_tls_certificate(hostname, port=443, timeout=5):
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
 
+        target_ip = target_check["addresses"][0] if target_check.get("addresses") else hostname
+        sni_hostname = None if is_ip_address(hostname) else hostname
+
         with socket.create_connection(
-            (hostname, port),
+            (target_ip, port),
             timeout=timeout
         ) as sock:
 
             with context.wrap_socket(
                 sock,
-                server_hostname=hostname
+                server_hostname=sni_hostname
             ) as tls_socket:
 
                 certificate = tls_socket.getpeercert(
@@ -1309,16 +1331,6 @@ def make_http_request(url, timeout=5):
             )
         }
 
-    request = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "QRShield/1.0"
-        }
-    )
-
-    opener = urllib.request.build_opener(
-        NoRedirectHandler()
-    )
     request = urllib.request.Request(
         url,
         headers={

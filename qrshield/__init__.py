@@ -45,6 +45,10 @@ from qrshield.network import (
 
 from qrshield.redirects import (
     NoRedirectHandler,
+    PinnedHTTPConnection,
+    PinnedHTTPSConnection,
+    PinnedHTTPHandler,
+    PinnedHTTPSHandler,
     make_http_request,
     analyze_redirect_response,
     validate_redirect_target,
@@ -118,6 +122,10 @@ __all__ = [
     "build_tls_features",
     "evaluate_tls_risk",
     "NoRedirectHandler",
+    "PinnedHTTPConnection",
+    "PinnedHTTPSConnection",
+    "PinnedHTTPHandler",
+    "PinnedHTTPSHandler",
     "make_http_request",
     "analyze_redirect_response",
     "validate_redirect_target",

@@ -3,11 +3,14 @@ QRShield Redirect Handling, Loop Detection, and Risk Classification
 """
 
 import socket
+import ssl
+import http.client
 import urllib.parse
 import urllib.request
 import urllib.error
 from qrshield.constants import REDIRECT_STATUS_CODES
 from qrshield.network import is_unsafe_network_target
+from qrshield.lexical import is_ip_address
 from qrshield.compat import dispatch
 
 
@@ -17,6 +20,81 @@ class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
     """
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
+
+
+class PinnedHTTPConnection(http.client.HTTPConnection):
+    """
+    HTTP connection pinned to a pre-validated IP address,
+    preventing DNS rebinding while preserving Host header.
+    """
+    def __init__(self, host, port=None, pinned_ip=None, **kwargs):
+        super().__init__(host, port, **kwargs)
+        self.pinned_ip = pinned_ip
+
+    def connect(self):
+        clean_ip = self.pinned_ip
+        if clean_ip and clean_ip.startswith("[") and clean_ip.endswith("]"):
+            clean_ip = clean_ip[1:-1]
+        self.sock = socket.create_connection(
+            (clean_ip or self.host, self.port),
+            self.timeout,
+            self.source_address
+        )
+
+
+class PinnedHTTPSConnection(http.client.HTTPSConnection):
+    """
+    HTTPS connection pinned to a pre-validated IP address,
+    preventing DNS rebinding while preserving SNI and Host header.
+    """
+    def __init__(self, host, port=None, pinned_ip=None, **kwargs):
+        super().__init__(host, port, **kwargs)
+        self.pinned_ip = pinned_ip
+
+    def connect(self):
+        clean_ip = self.pinned_ip
+        if clean_ip and clean_ip.startswith("[") and clean_ip.endswith("]"):
+            clean_ip = clean_ip[1:-1]
+        self.sock = socket.create_connection(
+            (clean_ip or self.host, self.port),
+            self.timeout,
+            self.source_address
+        )
+        if self._tunnel_host:
+            server_hostname = self._tunnel_host
+        else:
+            server_hostname = None if is_ip_address(self.host) else self.host
+
+        self.sock = self._context.wrap_socket(
+            self.sock,
+            server_hostname=server_hostname
+        )
+
+
+class PinnedHTTPHandler(urllib.request.HTTPHandler):
+    """Handler opening HTTP connections pinned to pre-validated IP."""
+    def __init__(self, pinned_ip):
+        super().__init__()
+        self.pinned_ip = pinned_ip
+
+    def http_open(self, req):
+        return self.do_open(
+            lambda host, **kw: PinnedHTTPConnection(host, pinned_ip=self.pinned_ip, **kw),
+            req
+        )
+
+
+class PinnedHTTPSHandler(urllib.request.HTTPSHandler):
+    """Handler opening HTTPS connections pinned to pre-validated IP with SNI."""
+    def __init__(self, pinned_ip):
+        super().__init__()
+        self.pinned_ip = pinned_ip
+
+    def https_open(self, req):
+        return self.do_open(
+            lambda host, **kw: PinnedHTTPSConnection(host, pinned_ip=self.pinned_ip, **kw),
+            req
+        )
 
 
 def make_http_request(url, timeout=5):
@@ -47,6 +125,8 @@ def make_http_request(url, timeout=5):
             "error": "Blocked network target: " + network_check["reason"]
         }
 
+    target_ip = network_check["addresses"][0] if network_check.get("addresses") else hostname
+
     request = urllib.request.Request(
         url,
         headers={
@@ -55,7 +135,9 @@ def make_http_request(url, timeout=5):
     )
 
     opener = urllib.request.build_opener(
-        NoRedirectHandler()
+        NoRedirectHandler(),
+        PinnedHTTPHandler(target_ip),
+        PinnedHTTPSHandler(target_ip)
     )
 
     try:

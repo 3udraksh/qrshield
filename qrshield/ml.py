@@ -56,7 +56,12 @@ def analyze_ml_prediction(result):
             "status": "UNAVAILABLE",
             "prediction": None,
             "label": "UNKNOWN",
-            "confidence": None
+            "confidence": None,
+            "model_name": "RandomForestClassifier",
+            "model_version": "1.0.0-synthetic",
+            "is_calibrated": False,
+            "calibration_disclaimer": "Machine learning model unavailable.",
+            "uncertain": None
         }
 
     try:
@@ -78,12 +83,22 @@ def analyze_ml_prediction(result):
         probabilities = model.predict_proba(df)[0]
         confidence = float(max(probabilities))
         label = "SUSPICIOUS" if prediction == 1 else "LIKELY_SAFE"
+        uncertain = bool(0.40 <= confidence <= 0.60)
 
         return {
             "status": "AVAILABLE",
             "prediction": prediction,
             "label": label,
-            "confidence": round(confidence, 3)
+            "confidence": round(confidence, 3),
+            "model_name": "RandomForestClassifier",
+            "model_version": "1.0.0-synthetic",
+            "is_calibrated": False,
+            "calibration_disclaimer": "Tree-vote confidence; not a calibrated probability.",
+            "raw_probabilities": {
+                "safe": round(float(probabilities[0]), 3),
+                "suspicious": round(float(probabilities[1]), 3)
+            },
+            "uncertain": uncertain
         }
 
     except Exception as error:
@@ -92,6 +107,11 @@ def analyze_ml_prediction(result):
             "prediction": None,
             "label": "UNKNOWN",
             "confidence": None,
+            "model_name": "RandomForestClassifier",
+            "model_version": "1.0.0-synthetic",
+            "is_calibrated": False,
+            "calibration_disclaimer": "Inference error occurred.",
+            "uncertain": None,
             "error": str(error)
         }
 

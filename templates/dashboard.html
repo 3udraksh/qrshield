@@ -4,330 +4,448 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>QRShield Dashboard</title>
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 1100px;
-            margin: auto;
-            padding: 30px;
-        }
-
-        h1 {
-            margin-bottom: 5px;
-        }
-
-        .subtitle {
-            margin-bottom: 30px;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
-        .stat {
-            border: 1px solid #ddd;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        .stat h3 {
-            margin-top: 0;
+        .stat-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
         }
 
         .stat-value {
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 30px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.1;
         }
 
-        .history-item {
-            border-top: 1px solid #ddd;
-            padding: 15px 0;
-        }
-
-        .history-content {
-            font-weight: bold;
-            word-break: break-word;
-        }
-
-        .history-meta {
+        .stat-subtext {
+            font-size: 12px;
+            color: var(--text-muted);
             margin-top: 6px;
         }
 
-        @media (max-width: 800px) {
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
         }
 
-        @media (max-width: 500px) {
-            .stats {
-                grid-template-columns: 1fr;
-            }
+        .search-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            flex: 1;
         }
-            .risk-chart {
-            margin-top: 20px;
+
+        .search-input {
+            padding: 9px 14px !important;
+            font-size: 14px !important;
+            min-width: 200px;
+            flex: 1;
+        }
+
+        .filter-select {
+            padding: 9px 12px;
+            font-size: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            color: var(--text-primary);
+        }
+
+        .risk-chart {
+            margin-top: 15px;
         }
 
         .risk-row {
             display: grid;
-            grid-template-columns: 100px 1fr 40px;
-            gap: 12px;
+            grid-template-columns: 110px 1fr 50px;
+            gap: 14px;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .risk-label {
-            font-size: 0.9rem;
-            font-weight: bold;
+            font-size: 0.88rem;
+            font-weight: 700;
         }
 
         .risk-bar-container {
             height: 22px;
-            background: #eee;
-            border-radius: 4px;
+            background: #e2e8f0;
+            border-radius: 6px;
             overflow: hidden;
         }
 
         .risk-bar {
             height: 100%;
-            min-width: 2px;
+            min-width: 3px;
+            border-radius: 6px;
+            transition: width 0.3s ease;
         }
 
         .risk-bar.low {
-            background: #4caf50;
+            background: #10b981;
         }
 
         .risk-bar.caution {
-            background: #ff9800;
+            background: #f59e0b;
         }
 
         .risk-bar.high {
-            background: #f44336;
+            background: #ef4444;
         }
 
         .risk-count {
-            font-weight: bold;
+            font-weight: 700;
             text-align: right;
+            font-size: 14px;
         }
 
-    </style>
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+        }
 
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>QRShield Dashboard</h1>
+<div class="container">
 
-    <p class="subtitle">
-        Security analysis overview from recorded QR scans
-    </p>
-
-    <section class="stats">
-
-        <div class="stat">
-            <h3>Total Scans</h3>
-            <div class="stat-value">
-                {{ total_scans }}
-            </div>
+    <div class="dashboard-header">
+        <div>
+            <h1 style="margin: 0 0 6px 0;">QRShield Dashboard</h1>
+            <p style="margin: 0; color: var(--text-secondary);">Security analysis overview and historical telemetry from recorded QR scans</p>
         </div>
-
-        <div class="stat">
-            <h3>Low Risk</h3>
-            <div class="stat-value">
-                {{ low_risk }}
-            </div>
+        <div class="dashboard-link">
+            <a href="{{ url_for('index') }}">
+                &larr; Back to Scanner
+            </a>
         </div>
-
-        <div class="stat">
-            <h3>Caution</h3>
-            <div class="stat-value">
-                {{ caution }}
-            </div>
-        </div>
-
-        <div class="stat">
-            <h3>High Risk</h3>
-            <div class="stat-value">
-                {{ high_risk }}
-            </div>
-        </div>
-
-    </section>
-
-    <section>
-
-        <h2>Average Risk Score</h2>
-
-        <p class="stat-value">
-            {{ average_score }}/100
-        </p>
-
-    </section>
-
-    <section>
-
-    <h2>Scan Statistics</h2>
-
-    <div class="stats">
-
-        <div class="stat">
-            <h3>Scans Today</h3>
-
-            <div class="stat-value">
-                {{ scans_today }}
-            </div>
-        </div>
-
-        <div class="stat">
-            <h3>Last 7 Days</h3>
-
-            <div class="stat-value">
-                {{ scans_last_7_days }}
-            </div>
-        </div>
-
-        <div class="stat">
-            <h3>Common Type</h3>
-
-            <div class="stat-value">
-                {{ most_common_content_type }}
-            </div>
-        </div>
-
-        <div class="stat">
-            <h3>Highest Score</h3>
-
-            <div class="stat-value">
-                {{ highest_score }}/100
-            </div>
-        </div>
-
     </div>
 
-</section>
+    {% if integration_status %}
+    <div class="status-bar" style="justify-content: flex-start; margin-top: 0;">
+        <div class="status-pill {% if integration_status.local_mode %}status-active{% else %}status-info{% endif %}">
+            <span class="status-dot"></span>
+            <strong>Mode:</strong> {% if integration_status.local_mode %}Local Analysis (Zero Network Egress){% else %}Live Threat Intel{% endif %}
+        </div>
+        <div class="status-pill status-active">
+            <span class="status-dot"></span>
+            <strong>Telemetry:</strong> Capped at {{ max_history or 20 }} Records
+        </div>
+    </div>
+    {% endif %}
 
-        <section>
+    <!-- Top Telemetry Metrics -->
+    <section class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Scans</h3>
+            <div class="stat-value">{{ total_scans }}</div>
+            <div class="stat-subtext">{{ live_scans }} Live &bull; {{ sample_scans }} Sample</div>
+        </div>
 
-        <h2>Risk Distribution</h2>
+        <div class="stat-card">
+            <h3>Low Risk</h3>
+            <div class="stat-value" style="color: var(--risk-safe);">{{ low_risk }}</div>
+            <div class="stat-subtext">Safe destinations</div>
+        </div>
 
-        {% if total_scans > 0 %}
+        <div class="stat-card">
+            <h3>Caution</h3>
+            <div class="stat-value" style="color: var(--risk-caution);">{{ caution }}</div>
+            <div class="stat-subtext">Requires caution</div>
+        </div>
 
-            <div class="risk-chart">
-
-                <div class="risk-row">
-
-                    <div class="risk-label">
-                        LOW RISK
-                    </div>
-
-                    <div class="risk-bar-container">
-                        <div
-                            class="risk-bar low"
-                            style="width: {{ (low_risk / total_scans * 100) }}%;"
-                        ></div>
-                    </div>
-
-                    <div class="risk-count">
-                        {{ low_risk }}
-                    </div>
-
-                </div>
-
-
-                <div class="risk-row">
-
-                    <div class="risk-label">
-                        CAUTION
-                    </div>
-
-                    <div class="risk-bar-container">
-                        <div
-                            class="risk-bar caution"
-                            style="width: {{ (caution / total_scans * 100) }}%;"
-                        ></div>
-                    </div>
-
-                    <div class="risk-count">
-                        {{ caution }}
-                    </div>
-
-                </div>
-
-
-                <div class="risk-row">
-
-                    <div class="risk-label">
-                        HIGH RISK
-                    </div>
-
-                    <div class="risk-bar-container">
-                        <div
-                            class="risk-bar high"
-                            style="width: {{ (high_risk / total_scans * 100) }}%;"
-                        ></div>
-                    </div>
-
-                    <div class="risk-count">
-                        {{ high_risk }}
-                    </div>
-
-                </div>
-
-            </div>
-
-        {% else %}
-
-            <p>No risk distribution available yet.</p>
-
-        {% endif %}
-
+        <div class="stat-card">
+            <h3>High Risk</h3>
+            <div class="stat-value" style="color: var(--risk-high);">{{ high_risk }}</div>
+            <div class="stat-subtext">Malicious / High Threat</div>
+        </div>
     </section>
 
-    <section>
+    <!-- Scan Statistics Grid -->
+    <section class="card">
+        <h2>Scan Statistics</h2>
+        <div class="stats-grid" style="margin-bottom: 0;">
+            <div class="stat-card" style="box-shadow: none; background: #f8fafc;">
+                <h3>Scans Today</h3>
+                <div class="stat-value">{{ scans_today }}</div>
+            </div>
 
-        <h2>Recent Scans</h2>
+            <div class="stat-card" style="box-shadow: none; background: #f8fafc;">
+                <h3>Last 7 Days</h3>
+                <div class="stat-value">{{ scans_last_7_days }}</div>
+            </div>
+
+            <div class="stat-card" style="box-shadow: none; background: #f8fafc;">
+                <h3>Common Type</h3>
+                <div class="stat-value" style="font-size: 24px;">{{ most_common_content_type }}</div>
+            </div>
+
+            <div class="stat-card" style="box-shadow: none; background: #f8fafc;">
+                <h3>Highest Score</h3>
+                <div class="stat-value" style="font-size: 24px;">{{ highest_score }}/100</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Average Risk Score -->
+    <section class="card">
+        <h2>Average Risk Score</h2>
+        <p class="stat-value" style="margin: 0; color: var(--brand-primary);">
+            {{ average_score }}/100
+        </p>
+    </section>
+
+    <!-- Risk Distribution -->
+    <section class="card">
+        <h2>Risk Distribution</h2>
+        {% if total_scans > 0 %}
+        <div class="risk-chart">
+            <div class="risk-row">
+                <div class="risk-label" style="color: var(--risk-safe);">LOW RISK</div>
+                <div class="risk-bar-container">
+                    <div class="risk-bar low" style="width: {{ (low_risk / total_scans * 100) }}%;"></div>
+                </div>
+                <div class="risk-count">{{ low_risk }}</div>
+            </div>
+
+            <div class="risk-row">
+                <div class="risk-label" style="color: var(--risk-caution);">CAUTION</div>
+                <div class="risk-bar-container">
+                    <div class="risk-bar caution" style="width: {{ (caution / total_scans * 100) }}%;"></div>
+                </div>
+                <div class="risk-count">{{ caution }}</div>
+            </div>
+
+            <div class="risk-row">
+                <div class="risk-label" style="color: var(--risk-high);">HIGH RISK</div>
+                <div class="risk-bar-container">
+                    <div class="risk-bar high" style="width: {{ (high_risk / total_scans * 100) }}%;"></div>
+                </div>
+                <div class="risk-count">{{ high_risk }}</div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted">No risk distribution available yet.</p>
+        {% endif %}
+    </section>
+
+    <!-- Search & Filter Toolbar -->
+    <div class="toolbar">
+        <form method="GET" action="{{ url_for('dashboard') }}" class="search-form">
+            <input
+                type="text"
+                name="q"
+                value="{{ query or '' }}"
+                placeholder="Search content or risk..."
+                class="search-input"
+            >
+            <select name="risk" class="filter-select">
+                <option value="ALL" {% if not risk_filter or risk_filter == 'ALL' %}selected{% endif %}>All Risk Levels</option>
+                <option value="LOW RISK" {% if risk_filter == 'LOW RISK' %}selected{% endif %}>LOW RISK</option>
+                <option value="CAUTION" {% if risk_filter == 'CAUTION' %}selected{% endif %}>CAUTION</option>
+                <option value="HIGH RISK" {% if risk_filter == 'HIGH RISK' %}selected{% endif %}>HIGH RISK</option>
+            </select>
+            <select name="type" class="filter-select">
+                <option value="ALL" {% if not type_filter or type_filter == 'ALL' %}selected{% endif %}>All Content Types</option>
+                <option value="URL" {% if type_filter == 'URL' %}selected{% endif %}>URL</option>
+                <option value="WIFI" {% if type_filter == 'WIFI' %}selected{% endif %}>WIFI</option>
+                <option value="VCARD" {% if type_filter == 'VCARD' %}selected{% endif %}>VCARD</option>
+                <option value="SMS" {% if type_filter == 'SMS' %}selected{% endif %}>SMS</option>
+                <option value="EMAIL" {% if type_filter == 'EMAIL' %}selected{% endif %}>EMAIL</option>
+            </select>
+            <button type="submit" class="btn btn-sm">Filter</button>
+            {% if query or risk_filter or type_filter %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">Reset</a>
+            {% endif %}
+        </form>
+
+        <form method="POST" action="{{ url_for('clear_history') }}" onsubmit="return confirm('Clear all recorded scan history? This action cannot be undone.');">
+            <button type="submit" class="btn btn-danger btn-sm">Clear History</button>
+        </form>
+    </div>
+
+    <!-- Recent Scans List -->
+    <section class="card">
+        <div class="card-header-flex">
+            <h2>Recent Scans</h2>
+            {% if filtered_scans is defined and filtered_scans != total_scans %}
+            <span class="text-muted" style="font-size: 13px;">Showing {{ filtered_scans }} of {{ total_scans }} records</span>
+            {% endif %}
+        </div>
 
         {% if history %}
-
-            {% for scan in history %}
-
+            <div class="scan-history">
+                {% for scan in history %}
                 <div class="history-item">
+                    <div class="history-time">
+                        <span>{{ scan.timestamp }}</span>
+                        {% if scan.is_sample %}
+                        <span class="badge badge-sample">[Sample Data]</span>
+                        {% else %}
+                        <span class="badge badge-live">[Live Scan]</span>
+                        {% endif %}
+                    </div>
 
                     <div class="history-content">
                         {{ scan.content }}
                     </div>
 
-                    <div class="history-meta">
-
-                        {{ scan.timestamp }}
-                        |
-                        {{ scan.content_type }}
-                        |
-                        {{ scan.risk }}
-                        |
-                        {{ scan.score }}/100
-
+                    <div class="history-meta" style="justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="badge badge-neutral">{{ scan.content_type }}</span>
+                            <span class="badge {% if scan.risk == 'HIGH RISK' %}badge-danger{% elif scan.risk == 'CAUTION' %}badge-warning{% else %}badge-success{% endif %}">
+                                {{ scan.risk }}
+                            </span>
+                            <span>{{ scan.score }}/100</span>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="showScanModal({{ loop.index0 }})">
+                            Inspect
+                        </button>
                     </div>
-
                 </div>
-
-            {% endfor %}
-
+                {% endfor %}
+            </div>
         {% else %}
-
-            <p>No scans recorded yet.</p>
-
+            <p class="text-muted">No scans recorded yet.</p>
         {% endif %}
-
     </section>
 
-</body>
+    <!-- Scan Detail Modal -->
+    <div id="scan-modal" class="modal-overlay" onclick="closeModalOnOutsideClick(event)">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 style="margin: 0;">Scan Detail Inspection</h3>
+                <button type="button" class="modal-close" onclick="closeScanModal()">&times;</button>
+            </div>
+            <div id="modal-body" style="font-size: 14px; line-height: 1.6;">
+                <p><strong>Timestamp:</strong> <span id="m-time"></span></p>
+                <p><strong>Origin:</strong> <span id="m-origin"></span></p>
+                <p><strong>Content Type:</strong> <span id="m-type"></span></p>
+                <p><strong>Risk Level:</strong> <span id="m-risk"></span></p>
+                <p><strong>Risk Score:</strong> <span id="m-score"></span>/100</p>
+                <p><strong>Payload Content:</strong></p>
+                <div id="m-content" class="url-box" style="margin-top: 6px;"></div>
+            </div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeScanModal()">Close</button>
+            </div>
+        </div>
+    </div>
 
+    <footer>
+        QRShield — hRackers
+    </footer>
+
+</div>
+
+<script>
+const scanData = {{ history | tojson }};
+
+function showScanModal(index) {
+    if (!scanData || index >= scanData.length) return;
+    const scan = scanData[index];
+    document.getElementById("m-time").textContent = scan.timestamp || "N/A";
+    document.getElementById("m-origin").textContent = scan.is_sample ? "Demonstration Dataset [Sample Data]" : "Interactive User Scan [Live Scan]";
+    document.getElementById("m-type").textContent = scan.content_type || "UNKNOWN";
+    document.getElementById("m-risk").textContent = scan.risk || "UNKNOWN";
+    document.getElementById("m-score").textContent = scan.score !== undefined ? scan.score : "0";
+    document.getElementById("m-content").textContent = scan.content || "";
+    document.getElementById("scan-modal").classList.add("active");
+}
+
+function closeScanModal() {
+    document.getElementById("scan-modal").classList.remove("active");
+}
+
+function closeModalOnOutsideClick(event) {
+    if (event.target.id === "scan-modal") {
+        closeScanModal();
+    }
+}
+</script>
+
+</body>
 </html>

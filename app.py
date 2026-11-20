@@ -5,9 +5,10 @@ Web interface providing interactive QR image and URL vulnerability analysis,
 historical scan telemetry, and security report generation.
 """
 
-from flask import Flask, render_template, request, send_file, after_this_request
+from flask import Flask, render_template, request, send_file, after_this_request, redirect, url_for, jsonify
 from analyzer import analyze_url, export_security_report
 from qrshield.services import HistoryService, ScanService, ReportService
+from qrshield.config import Config, get_integration_status
 
 import cv2
 import numpy as np
@@ -64,13 +65,46 @@ def save_scan_history(result):
 
 @app.route("/dashboard", methods=["GET"])
 def dashboard():
-    history = HistoryService.load_history(globals().get("HISTORY_FILE", HISTORY_FILE))
-    metrics = HistoryService.compute_dashboard_metrics(history)
+    history_file = globals().get("HISTORY_FILE", HISTORY_FILE)
+    history = HistoryService.load_history(history_file)
+
+    query = request.args.get("q", "").strip()
+    risk_filter = request.args.get("risk", "").strip()
+    type_filter = request.args.get("type", "").strip()
+
+    filtered_history = HistoryService.filter_history(
+        history,
+        query=query,
+        risk_filter=risk_filter,
+        type_filter=type_filter
+    )
+    metrics = HistoryService.compute_dashboard_metrics(history, filtered_history=filtered_history)
+    integration_status = get_integration_status()
 
     return render_template(
         "dashboard.html",
+        integration_status=integration_status,
+        query=query,
+        risk_filter=risk_filter,
+        type_filter=type_filter,
         **metrics
     )
+
+
+@app.route("/clear-history", methods=["POST"])
+def clear_history():
+    history_file = globals().get("HISTORY_FILE", HISTORY_FILE)
+    HistoryService.clear_history(history_file)
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/api/scan/<int:scan_idx>", methods=["GET"])
+def api_scan_detail(scan_idx):
+    history_file = globals().get("HISTORY_FILE", HISTORY_FILE)
+    history = HistoryService.load_history(history_file)
+    if 0 <= scan_idx < len(history):
+        return jsonify({"status": "SUCCESS", "scan": history[scan_idx]})
+    return jsonify({"status": "NOT_FOUND", "message": "Scan record not found."}), 404
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -171,12 +205,14 @@ def index():
                             )
 
     history = HistoryService.load_history(globals().get("HISTORY_FILE", HISTORY_FILE))
+    integration_status = get_integration_status()
 
     return render_template(
         "index.html",
         result=result,
         error=error,
-        history=history
+        history=history,
+        integration_status=integration_status
     )
 
 

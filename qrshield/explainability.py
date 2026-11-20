@@ -4,7 +4,10 @@ QRShield Explainability Engine, Risk Correlation, AI Explanations & Reporting
 
 import os
 import json
+import uuid
+import datetime
 from google import genai
+from qrshield.privacy import redact_sensitive_payload
 
 
 def evaluate_risk_engine(
@@ -590,6 +593,7 @@ def validate_ai_output(ai_explanation, result):
 def build_security_report(result):
     """
     Build a structured security report from a QRShield analysis result.
+    Automatically redacts sensitive payload fields (Wi-Fi passwords, auth tokens).
     """
     if not isinstance(result, dict):
         return {
@@ -599,12 +603,18 @@ def build_security_report(result):
 
     risk_analysis = result.get("risk_analysis", {})
     features = result.get("features", {})
+    raw_content = result.get("url", "")
+    safe_content = result.get("safe_content") or redact_sensitive_payload(raw_content)
 
     return {
         "report_type": "QRShield Security Report",
+        "scan_id": result.get("scan_id") or str(uuid.uuid4()),
+        "generated_at": result.get("timestamp") or datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "version": "2.0.0",
         "content": {
-            "decoded_content": result.get("url"),
-            "content_type": result.get("content_type")
+            "decoded_content": safe_content,
+            "content_type": result.get("content_type"),
+            "is_redacted": bool(safe_content != raw_content)
         },
         "assessment": {
             "score": result.get("score"),
@@ -621,7 +631,21 @@ def build_security_report(result):
         "machine_learning": result.get("ml_analysis"),
         "machine_learning_consensus": result.get("ml_consensus"),
         "technical_analysis": features,
-        "summary": result.get("overall_explanation")
+        "summary": result.get("overall_explanation"),
+        "user_guidance": (
+            result.get("user_guidance", {}).get("guidance")
+            if isinstance(result.get("user_guidance"), dict)
+            else None
+        ),
+        "limitations": [
+            "Local Analysis Mode: Outbound socket connections and live external lookups are restricted for privacy.",
+            "ML model confidence reflects tree voting proportions and is not a calibrated Bayesian probability.",
+            "Static heuristic checks cannot detect payload changes that occur server-side post-scan."
+        ],
+        "privacy_notice": (
+            "Credentials (such as Wi-Fi passwords and sensitive authentication query tokens) "
+            "are automatically redacted in this report."
+        )
     }
 
 
@@ -634,7 +658,7 @@ def export_security_report(result, filepath):
 
     report = result.get("security_report")
     if not isinstance(report, dict):
-        raise ValueError("Security report is unavailable.")
+        report = build_security_report(result)
 
     with open(filepath, "w", encoding="utf-8") as file:
         json.dump(

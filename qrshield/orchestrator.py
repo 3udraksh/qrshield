@@ -48,6 +48,7 @@ from qrshield.ml import (
     analyze_ml_prediction,
     evaluate_ml_consensus
 )
+from qrshield.privacy import redact_sensitive_payload
 from qrshield.explainability import (
     evaluate_risk_engine,
     build_finding_explanation,
@@ -87,8 +88,10 @@ def analyze_url(url):
         message_analysis = analyze_message_qr(url, content_type)
 
     if content_type != "URL":
+        safe_content = redact_sensitive_payload(url)
         return {
             "url": url,
+            "safe_content": safe_content,
             "content_type": content_type,
             "wifi_analysis": wifi_analysis,
             "vcard_analysis": vcard_analysis,
@@ -124,7 +127,41 @@ def analyze_url(url):
                 "No URL security indicators were evaluated because "
                 "the QR content is not a URL."
             ),
-            "features": {}
+            "features": {},
+            "security_report": build_security_report({
+                "url": url,
+                "safe_content": safe_content,
+                "content_type": content_type,
+                "score": 0,
+                "risk": "LOW RISK",
+                "risk_analysis": {
+                    "score": 0,
+                    "risk": "LOW RISK",
+                    "risk_basis": "Non-URL QR content",
+                    "confidence": "LOW",
+                    "evidence": {
+                        "high": 0,
+                        "medium": 0,
+                        "low": 0
+                    },
+                    "correlation": {
+                        "level": "NONE",
+                        "count": 0,
+                        "signals": []
+                    }
+                },
+                "findings": [],
+                "explanations": [],
+                "overall_explanation": (
+                    f"QRShield detected {content_type} content. "
+                    "URL security analysis was not applied."
+                ),
+                "risk_evidence_explanation": (
+                    "No URL security indicators were evaluated because "
+                    "the QR content is not a URL."
+                ),
+                "features": {}
+            })
         }
 
     if not original_url:
@@ -730,8 +767,21 @@ def analyze_url(url):
             "detail": "The current heuristic engine did not identify suspicious characteristics."
         })
 
+    safe_content = redact_sensitive_payload(normalized_url)
+
+    partial_result = {
+        "url": normalized_url,
+        "safe_content": safe_content,
+        "content_type": content_type,
+        "score": score,
+        "risk": risk,
+        "findings": findings
+    }
+    user_guidance = generate_user_guidance(partial_result)
+
     result = {
         "url": normalized_url,
+        "safe_content": safe_content,
         "content_type": content_type,
         "wifi_analysis": wifi_analysis,
         "vcard_analysis": vcard_analysis,
@@ -747,8 +797,10 @@ def analyze_url(url):
         "features": features,
         "ml_analysis": ml_analysis,
         "ml_consensus": ml_consensus,
+        "user_guidance": user_guidance,
         "security_report": build_security_report({
             "url": url,
+            "safe_content": safe_content,
             "content_type": content_type,
             "score": score,
             "risk": risk,
@@ -757,13 +809,15 @@ def analyze_url(url):
             "explanations": explanations,
             "overall_explanation": overall_explanation,
             "risk_evidence_explanation": risk_evidence_explanation,
-            "features": features
+            "features": features,
+            "ml_analysis": ml_analysis,
+            "ml_consensus": ml_consensus,
+            "user_guidance": user_guidance
         })
     }
 
     result["ai_context"] = build_ai_context(result)
     result["ai_explanation"] = dispatch("generate_ai_explanation", generate_ai_explanation)(result["ai_context"])
     result["ai_validation"] = validate_ai_output(result["ai_explanation"], result)
-    result["user_guidance"] = generate_user_guidance(result)
 
     return result

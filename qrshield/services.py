@@ -9,20 +9,27 @@ from datetime import datetime
 import cv2
 import numpy as np
 from qrshield.explainability import export_security_report
+from qrshield.privacy import redact_sensitive_payload
 
 
 class HistoryService:
-    """Service managing scan history persistence and aggregation."""
+    """Service managing scan history persistence, filtering, and aggregation."""
 
     @staticmethod
     def load_history(filepath):
-        """Safely load history list from JSON file with corruption recovery."""
+        """Safely load history list from JSON file with corruption recovery and sample tagging."""
         if not filepath or not os.path.exists(filepath):
             return []
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return data if isinstance(data, list) else []
+                if not isinstance(data, list):
+                    return []
+                for scan in data:
+                    if isinstance(scan, dict) and "is_sample" not in scan:
+                        ts = str(scan.get("timestamp", ""))
+                        scan["is_sample"] = ts.startswith("2026-09")
+                return data
         except (json.JSONDecodeError, OSError):
             return []
 
@@ -33,12 +40,16 @@ class HistoryService:
             return
 
         history = HistoryService.load_history(filepath)
+        raw_content = result.get("url")
+        safe_content = result.get("safe_content") or redact_sensitive_payload(raw_content)
+
         entry = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "content": result.get("url"),
+            "content": safe_content if safe_content is not None else raw_content,
             "content_type": result.get("content_type"),
             "risk": result.get("risk"),
-            "score": result.get("score")
+            "score": result.get("score"),
+            "is_sample": False
         }
         history.insert(0, entry)
         history = history[:max_history]
@@ -50,12 +61,59 @@ class HistoryService:
             pass
 
     @staticmethod
-    def compute_dashboard_metrics(history):
+    def clear_history(filepath):
+        """Reset scan history to an empty list."""
+        if not filepath:
+            return False
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump([], f, indent=4, ensure_ascii=False)
+            return True
+        except OSError:
+            return False
+
+    @staticmethod
+    def filter_history(history, query=None, risk_filter=None, type_filter=None):
+        """Filter scan records by keyword search, risk category, and content type."""
+        if not isinstance(history, list):
+            return []
+
+        filtered = list(history)
+
+        if query and isinstance(query, str) and query.strip():
+            q_clean = query.strip().lower()
+            filtered = [
+                scan for scan in filtered
+                if q_clean in str(scan.get("content", "")).lower()
+                or q_clean in str(scan.get("content_type", "")).lower()
+                or q_clean in str(scan.get("risk", "")).lower()
+            ]
+
+        if risk_filter and isinstance(risk_filter, str) and risk_filter.strip().upper() not in ("", "ALL"):
+            rf = risk_filter.strip().upper()
+            filtered = [
+                scan for scan in filtered
+                if str(scan.get("risk", "")).upper() == rf
+            ]
+
+        if type_filter and isinstance(type_filter, str) and type_filter.strip().upper() not in ("", "ALL"):
+            tf = type_filter.strip().upper()
+            filtered = [
+                scan for scan in filtered
+                if str(scan.get("content_type", "")).upper() == tf
+            ]
+
+        return filtered
+
+    @staticmethod
+    def compute_dashboard_metrics(history, filtered_history=None):
         """Aggregate statistical metrics from scan history for dashboard rendering."""
         total_scans = len(history)
         low_risk = sum(1 for scan in history if scan.get("risk") == "LOW RISK")
         caution = sum(1 for scan in history if scan.get("risk") == "CAUTION")
         high_risk = sum(1 for scan in history if scan.get("risk") == "HIGH RISK")
+        sample_scans = sum(1 for scan in history if scan.get("is_sample") is True)
+        live_scans = total_scans - sample_scans
 
         scores = [
             scan.get("score")
@@ -98,12 +156,17 @@ class HistoryService:
         )
         highest_score = max(scores) if scores else 0
 
+        display_history = filtered_history if filtered_history is not None else history
+
         return {
-            "history": history,
+            "history": display_history,
             "total_scans": total_scans,
+            "filtered_scans": len(display_history),
             "low_risk": low_risk,
             "caution": caution,
             "high_risk": high_risk,
+            "sample_scans": sample_scans,
+            "live_scans": live_scans,
             "average_score": average_score,
             "scans_today": scans_today,
             "scans_last_7_days": scans_last_7_days,

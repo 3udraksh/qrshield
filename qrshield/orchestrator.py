@@ -812,6 +812,10 @@ def analyze_url(url):
             "features": features,
             "ml_analysis": ml_analysis,
             "ml_consensus": ml_consensus,
+            "dns_analysis": dns_analysis,
+            "tls_features": tls_features,
+            "redirect_analysis": redirect_analysis,
+            "reputation_analysis": reputation_analysis,
             "user_guidance": user_guidance
         })
     }

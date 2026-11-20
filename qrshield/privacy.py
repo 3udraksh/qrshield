@@ -62,6 +62,28 @@ def redact_url_sensitive_params(url):
         return url
 
 
+def redact_vcard_payload(payload):
+    """
+    Sanitize sensitive telephone digits in vCard payloads for display and reports.
+    Preserves structural headers while masking private phone digits.
+    """
+    if not payload or not isinstance(payload, str) or "BEGIN:VCARD" not in payload:
+        return payload
+
+    def mask_tel(match):
+        header = match.group(1)
+        raw_number = match.group(2).strip()
+        prefix = raw_number[:3] if len(raw_number) >= 3 else ""
+        return f"{header}{prefix}-***-****"
+
+    return re.sub(
+        r"(TEL[^:]*:)([+\d\s().-]+)",
+        mask_tel,
+        payload,
+        flags=re.IGNORECASE
+    )
+
+
 def redact_sensitive_payload(content):
     """
     Sanitize sensitive information across various QR payload types.
@@ -74,5 +96,8 @@ def redact_sensitive_payload(content):
 
     if content.startswith(("http://", "https://")):
         return redact_url_sensitive_params(content)
+
+    if "BEGIN:VCARD" in content:
+        return redact_vcard_payload(content)
 
     return content

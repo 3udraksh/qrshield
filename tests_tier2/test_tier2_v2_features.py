@@ -16,6 +16,7 @@ import analyzer
 from qrshield.privacy import (
     redact_wifi_payload,
     redact_url_sensitive_params,
+    redact_vcard_payload,
     redact_sensitive_payload
 )
 from qrshield.ml import analyze_ml_prediction
@@ -91,6 +92,14 @@ class Tier2V2FeaturesTestCase(IsolatedTestCase):
         self.assertIn("safe_content", res)
         self.assertNotIn("myVerySecretPass", res["safe_content"])
         self.assertIn("[REDACTED]", res["safe_content"])
+
+    def test_vcard_contact_redaction(self):
+        """vCard payloads have sensitive telephone numbers masked in safe representations."""
+        vcard_raw = "BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL:+1-555-867-5309\nEND:VCARD"
+        redacted = redact_vcard_payload(vcard_raw)
+        self.assertNotIn("5309", redacted)
+        self.assertIn("***-****", redacted)
+        self.assertIn("FN:John Doe", redacted)
 
     # -------------------------------------------------------------------------
     # 2. Machine Learning Metadata & Calibration Disclaimers
@@ -169,6 +178,8 @@ class Tier2V2FeaturesTestCase(IsolatedTestCase):
         self.assertNotIn("SuperSecretPasswd123", json.dumps(report))
         self.assertTrue(report["content"]["is_redacted"])
         self.assertIn("[REDACTED]", report["content"]["decoded_content"])
+        self.assertIn("network_and_reputation", report)
+        self.assertIn("dns", report["network_and_reputation"])
 
     # -------------------------------------------------------------------------
     # 4. History Service: Filter, Clear, and Sample vs. Live Tagging

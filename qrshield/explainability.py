@@ -630,6 +630,12 @@ def build_security_report(result):
         },
         "machine_learning": result.get("ml_analysis"),
         "machine_learning_consensus": result.get("ml_consensus"),
+        "network_and_reputation": {
+            "dns": result.get("dns_analysis"),
+            "tls": result.get("tls_features"),
+            "redirects": result.get("redirect_analysis"),
+            "reputation": result.get("reputation_analysis")
+        },
         "technical_analysis": features,
         "summary": result.get("overall_explanation"),
         "user_guidance": (
@@ -638,13 +644,13 @@ def build_security_report(result):
             else None
         ),
         "limitations": [
-            "Local Analysis Mode: Outbound socket connections and live external lookups are restricted for privacy.",
+            "Local Analysis Mode: Outbound socket connections and live external lookups are restricted for privacy unless explicitly configured.",
             "ML model confidence reflects tree voting proportions and is not a calibrated Bayesian probability.",
             "Static heuristic checks cannot detect payload changes that occur server-side post-scan."
         ],
         "privacy_notice": (
             "Credentials (such as Wi-Fi passwords and sensitive authentication query tokens) "
-            "are automatically redacted in this report."
+            "and private contact details are automatically redacted in this report."
         )
     }
 

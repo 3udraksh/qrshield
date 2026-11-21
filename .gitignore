@@ -4,3 +4,4 @@ __pycache__/
 uploads/*
 analyzer_stage1_backup.py
 .env
+data/raw/*

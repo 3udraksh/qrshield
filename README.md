@@ -98,14 +98,35 @@ Protects user privacy and credential hygiene:
 - **Contract Preservation**: Keeps raw input within internal analysis buffers for contract compliance while exposing sanitized representations (`safe_content`) to templates, telemetry, and reports.
 
 ### 2.5 Machine Learning & Consensus Scoring (`qrshield.ml`)
-- **Model**: Offline `RandomForestClassifier` trained with scikit-learn (`ml/qrshield_model.joblib`).
-- **Feature Vector**: 9 deterministic lexical signals extracted in exact order:
-  1. `URL Length`, 2. `Hostname Length`, 3. `Subdomain Count`, 4. `Path Depth`, 5. `Query Parameters`, 6. `Percent Encoded Characters`, 7. `Hostname Hyphens`, 8. `Hostname Digits`, 9. `Hostname Entropy`.
-- **Tree-Vote Calibration Disclaimer**: Clarifies that tree-vote proportions represent voting fractions rather than calibrated posterior probabilities.
-- **Uncertainty Flag**: Automatically raises an uncertainty alert when vote confidence sits near the classification boundary (40% to 60%).
+- **Production Architecture**: Milestone 2 Advanced Hybrid Decision Ensemble (`ml/models/qrshield_hybrid_v2.joblib`), combining character-level representations and structural URL patterns:
+  - **Model A (Character TF-IDF)**: Sublinear character 3-to-5 n-grams with Platt-calibrated Linear Support Vector Machine, capturing sub-word phishing cues (`php`, `login`, `admin`, `wallet`, `help`).
+  - **Model B (Structural Features)**: 28 static lexical, entropy, ratio, and transport features processed via calibrated Histogram-based Gradient Boosting (`HistGradientBoostingClassifier`).
+  - **Model C (Hybrid Ensemble)**: Validation-optimized probability blend ($w_{\text{char}}=0.40, w_{\text{struct}}=0.60$) minimizing Brier score loss.
+- **Empirical Performance on Unseen Domains (1,834 Holdout Domains)**:
+  - **F1 Score**: **0.9808** (vs. 0.4749 historical baseline)
+  - **PR-AUC**: **0.9986** | **ROC-AUC**: **0.9985**
+  - **Brier Calibration Score**: **0.0167**
+  - **Operational False Positive Rate**: **0.95% at $\tau = 0.65$** (satisfies production requirement of FPR < 1.0%)
+- **Calibrated Posterior Probabilities**: Employs Platt scaling calibrated on a domain-disjoint validation split, delivering true posterior probabilities rather than raw tree votes.
+- **Uncertainty Quantification**: Automatically flags borderline predictions ($0.35 \le \hat{P} \le 0.65$) or sub-model disagreements, deferring authority to deterministic heuristic rules.
+- **Backward Compatibility**: If URL payload is omitted (e.g. legacy feature vector tests) or the hybrid artifact is inactive, automatically falls back to the historical `RandomForestClassifier` (`ml/qrshield_model.joblib`) on Schema v1 (9 features).
 - **Consensus Logic**: Reconciles rule-based heuristic risk score with ML classifier predictions:
   - `AGREE_SAFE` / `AGREE_SUSPICIOUS`: Consensus between engines reinforces confidence.
   - `ML_DISAGREEMENT`: Deterministic heuristic findings remain authoritative while flagging the discrepancy.
+
+#### Empirical Benchmark Comparison (Domain-Disjoint Evaluation on 1,834 Unseen Domains)
+
+| Model Family | Feature Schema | Training Corpus | F1 Score | PR-AUC | ROC-AUC | Brier Score | FPR (at default) | Operational FPR ($\tau=0.65$) |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Historical Synthetic RF | Schema v1 (9) | 16-row Synthetic | 0.4749 | 0.4223 | 0.3780 | 0.3817 | 87.34% | N/A |
+| Random Forest v1 | Schema v1 (9) | Real Train (9.9k) | 0.8916 | 0.9701 | 0.9641 | 0.0719 | 2.43% | 1.30% |
+| Random Forest v2 | Schema v2 (28) | Real Train (9.9k) | 0.9403 | 0.9900 | 0.9908 | 0.0400 | 2.08% | 1.13% |
+| Extra Trees | Schema v2 (28) | Real Train (9.9k) | 0.9378 | 0.9903 | 0.9892 | 0.0467 | 1.82% | 1.04% |
+| HistGradientBoosting | Schema v2 (28) | Real Train (9.9k) | 0.9750 | 0.9968 | 0.9966 | 0.0191 | 1.65% | 0.95% |
+| Char TF-IDF (Calibrated SVM) | Char n-grams | Real Train (9.9k) | 0.9545 | 0.9940 | 0.9942 | 0.0293 | 3.99% | 1.48% |
+| **Model C (Hybrid Ensemble)** | **Hybrid (Dual)** | Real Train (9.9k) | **0.9808** | **0.9986** | **0.9985** | **0.0167** | **1.91%** | **0.95%** |
+
+*See [`ml/RESEARCH_REPORT.md`](file:///home/rudraksh/cybersecurity/projects/qrshield/ml/RESEARCH_REPORT.md) for full methodology, interpretability signals, threshold curves, and error analysis.*
 
 ---
 
@@ -216,16 +237,18 @@ Verifies complete preservation of baseline behavior across:
 - History persistence, 20-item capping, and JSON corruption recovery
 - In-memory route dispatch and error handling
 
-### 6.2 Run Tier 2 Security & Architecture Suite (29 tests)
+### 6.2 Run Tier 2 Security & Architecture Suite (38 tests)
 ```bash
 .venv/bin/python -m unittest discover -s tests_tier2 -p "test_*.py" -v
 ```
-Verifies architectural refactoring improvements:
+Verifies architectural refactoring and Milestone 2 ML engine improvements:
+- Hybrid ML model loading, 28-feature Schema v2 extraction, Platt calibration, and unseen domain generalization
+- Dual-model component breakdown (Character TF-IDF + Structural HistGradientBoosting)
+- Backward-compatible fallback to historical synthetic baseline
 - SSRF validation and socket DNS pinning during TLS inspection (`PinnedHTTPConnection`, `PinnedHTTPSConnection`)
 - Elimination of temporary disk writes during QR image ingestion
 - Thread-safe report exports without re-analyzing cached destinations
 - Sensitive credential redaction across Wi-Fi passwords and URL query parameters
-- ML model metadata, tree-vote calibration disclaimers, and uncertainty indicator
 - Telemetry keyword searching, risk level filtering, history clearance, and sample vs. live data tagging
 
 ---

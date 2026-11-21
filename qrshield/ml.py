@@ -5,19 +5,39 @@ QRShield Machine Learning Feature Extraction, Model Inference & Consensus
 import os
 import joblib
 import pandas as pd
-from qrshield.constants import ML_MODEL_PATH
+from qrshield.constants import ML_MODEL_PATH, HYBRID_MODEL_PATH
 from qrshield.compat import dispatch
+
+_CACHED_HYBRID_MODEL = None
 
 
 def load_ml_model():
     """
-    Load the pre-trained Random Forest model artifact.
+    Load the historical baseline Random Forest model artifact.
     """
     if not os.path.exists(ML_MODEL_PATH):
         return None
 
     try:
         return joblib.load(ML_MODEL_PATH)
+    except Exception:
+        return None
+
+
+def load_hybrid_model():
+    """
+    Load the production calibrated HybridEnsemble model artifact.
+    """
+    global _CACHED_HYBRID_MODEL
+    if _CACHED_HYBRID_MODEL is not None:
+        return _CACHED_HYBRID_MODEL
+
+    if not os.path.exists(HYBRID_MODEL_PATH):
+        return None
+
+    try:
+        _CACHED_HYBRID_MODEL = joblib.load(HYBRID_MODEL_PATH)
+        return _CACHED_HYBRID_MODEL
     except Exception:
         return None
 
@@ -48,10 +68,12 @@ def extract_ml_features(result):
 def analyze_ml_prediction(result):
     """
     Run machine-learning inference on an analysis result.
+    Employs the production HybridEnsemble model when a URL is available,
+    falling back to the historical baseline Random Forest model for feature-only
+    inputs or when hybrid artifacts are inactive.
     """
-    model = dispatch("load_ml_model", load_ml_model)()
-
-    if model is None:
+    legacy_model = dispatch("load_ml_model", load_ml_model)()
+    if legacy_model is None:
         return {
             "status": "UNAVAILABLE",
             "prediction": None,
@@ -64,6 +86,19 @@ def analyze_ml_prediction(result):
             "uncertain": None
         }
 
+    url = result.get("url") if isinstance(result, dict) else None
+
+    # Production Hybrid Ensemble inference if URL is present and hybrid artifact exists
+    if url and isinstance(url, str) and url.strip():
+        hybrid_model = dispatch("load_hybrid_model", load_hybrid_model)()
+        if hybrid_model is not None:
+            try:
+                inference = hybrid_model.predict_single(url)
+                return inference
+            except Exception:
+                pass
+
+    # Historical Baseline Random Forest inference (Schema v1, 9 features)
     try:
         features = extract_ml_features(result)
         feature_names = [
@@ -79,8 +114,8 @@ def analyze_ml_prediction(result):
         ]
 
         df = pd.DataFrame(features, columns=feature_names)
-        prediction = int(model.predict(df)[0])
-        probabilities = model.predict_proba(df)[0]
+        prediction = int(legacy_model.predict(df)[0])
+        probabilities = legacy_model.predict_proba(df)[0]
         confidence = float(max(probabilities))
         label = "SUSPICIOUS" if prediction == 1 else "LIKELY_SAFE"
         uncertain = bool(0.40 <= confidence <= 0.60)

@@ -1,0 +1,62 @@
+{
+    "timestamp": "2026-11-20T21:55:13.072614+00:00",
+    "total_records_read": 15600,
+    "invalid_records_removed": 0,
+    "exact_duplicates_removed": 51,
+    "conflicting_labels_quarantined": 0,
+    "near_duplicates_culled": 1157,
+    "final_clean_records": 14392,
+    "class_distribution": {
+        "benign_count": 7797,
+        "malicious_count": 6595,
+        "malicious_ratio": 0.4582
+    },
+    "source_distribution": {
+        "phishtank": 6306,
+        "openphish": 289,
+        "tranco": 7797
+    },
+    "unique_registrable_domains": 12225,
+    "top_10_domains": [
+        [
+            "google.com",
+            164
+        ],
+        [
+            "wixstudio.com",
+            115
+        ],
+        [
+            "qr-codes.io",
+            77
+        ],
+        [
+            "qrco.de",
+            71
+        ],
+        [
+            "scanned.page",
+            58
+        ],
+        [
+            "powr.io",
+            56
+        ],
+        [
+            "ghost.io",
+            56
+        ],
+        [
+            "workers.dev",
+            43
+        ],
+        [
+            "tinyurl.com",
+            34
+        ],
+        [
+            "q-r.to",
+            31
+        ]
+    ]
+}

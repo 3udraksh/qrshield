@@ -1,0 +1,80 @@
+{
+    "model_name": "HybridEnsemble",
+    "model_version": "2.0.0-hybrid",
+    "trained_timestamp": "2026-11-21T05:35:42Z",
+    "artifact_path": "ml/models/qrshield_hybrid_v2.joblib",
+    "char_submodel": {
+        "type": "TfidfVectorizer + CalibratedLinearSVM",
+        "ngram_range": [
+            3,
+            5
+        ],
+        "max_features": 10000,
+        "weight": 0.4
+    },
+    "structural_submodel": {
+        "type": "HistGradientBoostingClassifier",
+        "feature_count": 28,
+        "features": [
+            "url_length",
+            "hostname_length",
+            "path_length",
+            "query_length",
+            "subdomain_count",
+            "path_depth",
+            "query_param_count",
+            "digit_count",
+            "digit_ratio",
+            "letter_count",
+            "letter_ratio",
+            "special_char_count",
+            "special_char_ratio",
+            "url_entropy",
+            "hostname_entropy",
+            "hostname_hyphens",
+            "hostname_digits",
+            "is_ip_address",
+            "is_punycode",
+            "suspicious_tld",
+            "suspicious_keyword_count",
+            "percent_encoding_count",
+            "percent_encoding_depth",
+            "userinfo_deception",
+            "is_https",
+            "non_default_port",
+            "suspicious_redirect_param",
+            "char_diversity"
+        ],
+        "weight": 0.6
+    },
+    "calibration": {
+        "method": "Platt Scaling (Sigmoid) on Validation Holdout",
+        "validation_brier_score": 0.01982,
+        "test_brier_score": 0.0167
+    },
+    "test_performance_domain_disjoint": {
+        "model_family": "Model C (HybridEnsemble v2.0.0-hybrid)",
+        "accuracy": 0.9809,
+        "precision": 0.9808,
+        "recall": 0.9808,
+        "f1": 0.9808,
+        "roc_auc": 0.9985,
+        "pr_auc": 0.9986,
+        "brier_score": 0.0167,
+        "fpr": 0.0191,
+        "confusion_matrix": {
+            "tn": 1131,
+            "fp": 22,
+            "fn": 22,
+            "tp": 1126
+        }
+    },
+    "operational_recommendations": {
+        "default_decision_threshold": 0.5,
+        "conservative_low_fpr_threshold": 0.65,
+        "uncertainty_range": [
+            0.35,
+            0.65
+        ]
+    }
+}

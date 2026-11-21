@@ -196,15 +196,17 @@
                 </div>
 
                 <div class="ml-metric">
-                    <span class="ml-metric-label">Tree-Vote Confidence</span>
+                    <span class="ml-metric-label">{% if result.ml_analysis.is_calibrated %}Calibrated Malicious Probability{% else %}Tree-Vote Confidence{% endif %}</span>
                     <strong class="ml-metric-value">
-                        {% if result.ml_analysis.confidence is not none %}
+                        {% if result.ml_analysis.is_calibrated and result.ml_analysis.calibrated_probability is not none %}
+                            {{ (result.ml_analysis.calibrated_probability * 100) | round(1) }}%
+                        {% elif result.ml_analysis.confidence is not none %}
                             {{ (result.ml_analysis.confidence * 100) | round(1) }}%
                         {% else %}
                             N/A
                         {% endif %}
                     </strong>
-                    <small class="calibration-note">⚠️ {{ result.ml_analysis.calibration_disclaimer or "Tree-vote confidence; not a calibrated probability." }}</small>
+                    <small class="calibration-note">{% if result.ml_analysis.is_calibrated %}✓{% else %}⚠️{% endif %} {{ result.ml_analysis.calibration_disclaimer or "Tree-vote confidence; not a calibrated probability." }}</small>
                 </div>
 
                 {% if result.ml_consensus %}
@@ -224,10 +226,33 @@
                 {% endif %}
             </div>
 
+            {% if result.ml_analysis.components %}
+            <div class="ml-components" style="margin-top: 14px; padding: 12px 14px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="font-size: 13px; color: var(--text-primary);">Hybrid Sub-Model Components</strong>
+                    {% if result.ml_analysis.components.submodels_agree %}
+                        <span class="badge badge-success">Consistent Sub-Models</span>
+                    {% else %}
+                        <span class="badge badge-warning">Divergent Sub-Models</span>
+                    {% endif %}
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 12px;">
+                    <div>
+                        <span class="text-muted">Model A (Character TF-IDF, weight {{ (result.ml_analysis.components.character_weight * 100) | round(0) }}%):</span>
+                        <strong style="display: block; font-size: 14px; margin-top: 2px;">{{ (result.ml_analysis.components.character_model_prob * 100) | round(1) }}% malicious</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted">Model B (Structural Features, weight {{ (result.ml_analysis.components.structural_weight * 100) | round(0) }}%):</span>
+                        <strong style="display: block; font-size: 14px; margin-top: 2px;">{{ (result.ml_analysis.components.structural_model_prob * 100) | round(1) }}% malicious</strong>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             {% if result.ml_analysis.uncertain %}
             <div class="alert-uncertain">
                 <strong>⚠️ Decision Boundary Uncertainty:</strong>
-                This scan falls near the classification decision boundary (40-60% voting fraction). Deterministic heuristic rules remain authoritative.
+                {{ result.ml_analysis.uncertainty_reason or "This scan falls near the classification decision boundary. Deterministic heuristic rules remain authoritative." }}
             </div>
             {% endif %}
 

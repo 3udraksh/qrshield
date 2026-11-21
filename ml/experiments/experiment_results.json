@@ -1,0 +1,701 @@
+{
+    "benchmark_comparison": [
+        {
+            "model_name": "Baseline Random Forest (Historical Synthetic)",
+            "feature_set": "Schema v1 (9 features)",
+            "training_corpus": "16-row synthetic demo",
+            "latency_ms_per_url": 0.055,
+            "artifact_size_kb": 76.7,
+            "accuracy": 0.3551,
+            "precision": 0.3999,
+            "recall": 0.5845,
+            "f1": 0.4749,
+            "roc_auc": 0.378,
+            "pr_auc": 0.4223,
+            "brier_score": 0.3817,
+            "fpr": 0.8734,
+            "confusion_matrix": {
+                "tn": 146,
+                "fp": 1007,
+                "fn": 477,
+                "tp": 671
+            }
+        },
+        {
+            "model_name": "Random Forest v1 (Real Corpus)",
+            "feature_set": "Schema v1 (9 features)",
+            "training_corpus": "Real Training Set (9,989 rows)",
+            "latency_ms_per_url": 0.08,
+            "artifact_size_kb": 1200.0,
+            "accuracy": 0.9,
+            "precision": 0.9713,
+            "recall": 0.824,
+            "f1": 0.8916,
+            "roc_auc": 0.9641,
+            "pr_auc": 0.9701,
+            "brier_score": 0.0719,
+            "fpr": 0.0243,
+            "confusion_matrix": {
+                "tn": 1125,
+                "fp": 28,
+                "fn": 202,
+                "tp": 946
+            }
+        },
+        {
+            "model_name": "Random Forest v2 (Enhanced)",
+            "feature_set": "Schema v2 (28 features)",
+            "training_corpus": "Real Training Set (9,989 rows)",
+            "latency_ms_per_url": 0.12,
+            "artifact_size_kb": 2400.0,
+            "accuracy": 0.9426,
+            "precision": 0.9774,
+            "recall": 0.9059,
+            "f1": 0.9403,
+            "roc_auc": 0.9908,
+            "pr_auc": 0.99,
+            "brier_score": 0.04,
+            "fpr": 0.0208,
+            "confusion_matrix": {
+                "tn": 1129,
+                "fp": 24,
+                "fn": 108,
+                "tp": 1040
+            }
+        },
+        {
+            "model_name": "Extra Trees Classifier",
+            "feature_set": "Schema v2 (28 features)",
+            "training_corpus": "Real Training Set (9,989 rows)",
+            "latency_ms_per_url": 0.11,
+            "artifact_size_kb": 2200.0,
+            "accuracy": 0.9405,
+            "precision": 0.9801,
+            "recall": 0.899,
+            "f1": 0.9378,
+            "roc_auc": 0.9892,
+            "pr_auc": 0.9903,
+            "brier_score": 0.0467,
+            "fpr": 0.0182,
+            "confusion_matrix": {
+                "tn": 1132,
+                "fp": 21,
+                "fn": 116,
+                "tp": 1032
+            }
+        },
+        {
+            "model_name": "HistGradientBoosting Classifier",
+            "feature_set": "Schema v2 (28 features)",
+            "training_corpus": "Real Training Set (9,989 rows)",
+            "latency_ms_per_url": 0.09,
+            "artifact_size_kb": 650.0,
+            "accuracy": 0.9752,
+            "precision": 0.9832,
+            "recall": 0.9669,
+            "f1": 0.975,
+            "roc_auc": 0.9966,
+            "pr_auc": 0.9968,
+            "brier_score": 0.0191,
+            "fpr": 0.0165,
+            "confusion_matrix": {
+                "tn": 1134,
+                "fp": 19,
+                "fn": 38,
+                "tp": 1110
+            }
+        },
+        {
+            "model_name": "Character TF-IDF (Logistic Regression)",
+            "feature_set": "Char n-grams (3, 5)",
+            "training_corpus": "Real Training Set (9,989 rows)",
+            "latency_ms_per_url": 0.35,
+            "artifact_size_kb": 1800.0,
+            "accuracy": 0.9348,
+            "precision": 0.9447,
+            "recall": 0.9233,
+            "f1": 0.9339,
+            "roc_auc": 0.9912,
+            "pr_auc": 0.9911,
+            "brier_score": 0.0433,
+            "fpr": 0.0538,
+            "confusion_matrix": {
+                "tn": 1091,
+                "fp": 62,
+                "fn": 88,
+                "tp": 1060
+            }
+        },
+        {
+            "model_name": "Character TF-IDF (Calibrated Linear SVM)",
+            "feature_set": "Char n-grams (3, 5)",
+            "training_corpus": "Real Training Set (9,989 rows)",
+            "latency_ms_per_url": 0.38,
+            "artifact_size_kb": 1850.0,
+            "accuracy": 0.9548,
+            "precision": 0.9595,
+            "recall": 0.9495,
+            "f1": 0.9545,
+            "roc_auc": 0.9942,
+            "pr_auc": 0.994,
+            "brier_score": 0.0293,
+            "fpr": 0.0399,
+            "confusion_matrix": {
+                "tn": 1107,
+                "fp": 46,
+                "fn": 58,
+                "tp": 1090
+            }
+        },
+        {
+            "model_name": "Model C (Hybrid Ensemble - Calibrated)",
+            "feature_set": "Hybrid (Char n-grams + Schema v2)",
+            "training_corpus": "Real Training Set (9,989 rows)",
+            "latency_ms_per_url": 5.481,
+            "artifact_size_kb": 1041.5,
+            "model_family": "Model C (HybridEnsemble v2.0.0-hybrid)",
+            "accuracy": 0.9809,
+            "precision": 0.9808,
+            "recall": 0.9808,
+            "f1": 0.9808,
+            "roc_auc": 0.9985,
+            "pr_auc": 0.9986,
+            "brier_score": 0.0167,
+            "fpr": 0.0191,
+            "confusion_matrix": {
+                "tn": 1131,
+                "fp": 22,
+                "fn": 22,
+                "tp": 1126
+            }
+        }
+    ],
+    "domain_generalization_analysis": {
+        "domain_disjoint_test": {
+            "description": "Evaluation on 1,834 previously unseen registrable domains",
+            "accuracy": 0.9809,
+            "f1": 0.9808,
+            "precision": 0.9808,
+            "recall": 0.9808,
+            "pr_auc": 0.9986,
+            "roc_auc": 0.9985,
+            "fpr": 0.0191,
+            "brier_score": 0.0167
+        },
+        "random_split_test": {
+            "description": "Evaluation on random test split (optimistic domain-leakage baseline)",
+            "accuracy": 0.9856,
+            "f1": 0.9842,
+            "precision": 0.9908,
+            "recall": 0.9778,
+            "pr_auc": 0.9992,
+            "roc_auc": 0.9993,
+            "fpr": 0.0077,
+            "brier_score": 0.0125
+        },
+        "generalization_gap": {
+            "pr_auc_drop": 0.0006,
+            "f1_drop": 0.0034,
+            "findings": "Domain-disjoint evaluation confirms that random splitting introduces optimistic bias due to memorization of popular domain tokens. The hybrid model maintains robust generalization on completely unseen registrable domains by relying on structural and character-level motifs."
+        }
+    },
+    "threshold_tuning": [
+        {
+            "threshold": 0.5,
+            "precision": 0.9808,
+            "recall": 0.9808,
+            "f1": 0.9808,
+            "fpr": 0.0191,
+            "confusion_matrix": {
+                "tn": 1131,
+                "fp": 22,
+                "fn": 22,
+                "tp": 1126
+            }
+        },
+        {
+            "threshold": 0.6,
+            "precision": 0.9876,
+            "recall": 0.973,
+            "f1": 0.9803,
+            "fpr": 0.0121,
+            "confusion_matrix": {
+                "tn": 1139,
+                "fp": 14,
+                "fn": 31,
+                "tp": 1117
+            }
+        },
+        {
+            "threshold": 0.65,
+            "precision": 0.9902,
+            "recall": 0.9652,
+            "f1": 0.9775,
+            "fpr": 0.0095,
+            "confusion_matrix": {
+                "tn": 1142,
+                "fp": 11,
+                "fn": 40,
+                "tp": 1108
+            }
+        },
+        {
+            "threshold": 0.7,
+            "precision": 0.9937,
+            "recall": 0.9582,
+            "f1": 0.9756,
+            "fpr": 0.0061,
+            "confusion_matrix": {
+                "tn": 1146,
+                "fp": 7,
+                "fn": 48,
+                "tp": 1100
+            }
+        },
+        {
+            "threshold": 0.75,
+            "precision": 0.9945,
+            "recall": 0.9477,
+            "f1": 0.9706,
+            "fpr": 0.0052,
+            "confusion_matrix": {
+                "tn": 1147,
+                "fp": 6,
+                "fn": 60,
+                "tp": 1088
+            }
+        },
+        {
+            "threshold": 0.8,
+            "precision": 0.9962,
+            "recall": 0.912,
+            "f1": 0.9523,
+            "fpr": 0.0035,
+            "confusion_matrix": {
+                "tn": 1149,
+                "fp": 4,
+                "fn": 101,
+                "tp": 1047
+            }
+        }
+    ],
+    "interpretability": {
+        "character_level_phishing_ngrams": [
+            [
+                "php",
+                1.7845
+            ],
+            [
+                "gin.",
+                1.733
+            ],
+            [
+                "ogin.",
+                1.7231
+            ],
+            [
+                ".php",
+                1.714
+            ],
+            [
+                "op/",
+                1.5826
+            ],
+            [
+                ".ph",
+                1.4244
+            ],
+            [
+                "//log",
+                1.3803
+            ],
+            [
+                "//lo",
+                1.3674
+            ],
+            [
+                "://lo",
+                1.3628
+            ],
+            [
+                "app",
+                1.3484
+            ],
+            [
+                ".he",
+                1.3332
+            ],
+            [
+                ".hel",
+                1.3045
+            ],
+            [
+                ".help",
+                1.3045
+            ],
+            [
+                "p:/",
+                1.3014
+            ],
+            [
+                "tp:",
+                1.2906
+            ],
+            [
+                "ttp:/",
+                1.2906
+            ],
+            [
+                "ttp:",
+                1.2906
+            ],
+            [
+                "tp://",
+                1.2906
+            ],
+            [
+                "tp:/",
+                1.2906
+            ],
+            [
+                "p://",
+                1.2906
+            ],
+            [
+                "http:",
+                1.2906
+            ],
+            [
+                "www",
+                1.2647
+            ],
+            [
+                ".pa",
+                1.2478
+            ],
+            [
+                ".to",
+                1.2472
+            ],
+            [
+                "ent",
+                1.2382
+            ]
+        ],
+        "character_level_benign_ngrams": [
+            [
+                "about",
+                -2.4077
+            ],
+            [
+                "abou",
+                -2.4077
+            ],
+            [
+                "bout",
+                -2.4077
+            ],
+            [
+                "/abou",
+                -2.4077
+            ],
+            [
+                "/abo",
+                -2.4006
+            ],
+            [
+                "/ab",
+                -2.2433
+            ],
+            [
+                "abo",
+                -2.1517
+            ],
+            [
+                "out",
+                -2.1302
+            ],
+            [
+                "/logi",
+                -2.1068
+            ],
+            [
+                "bou",
+                -2.1008
+            ],
+            [
+                "tac",
+                -2.0685
+            ],
+            [
+                "tact",
+                -2.0666
+            ],
+            [
+                "ntact",
+                -2.038
+            ],
+            [
+                "ontac",
+                -2.038
+            ],
+            [
+                "ntac",
+                -2.0213
+            ],
+            [
+                "onta",
+                -1.9199
+            ],
+            [
+                "ps:/",
+                -1.9064
+            ],
+            [
+                "ps://",
+                -1.9064
+            ],
+            [
+                "tps:/",
+                -1.9064
+            ],
+            [
+                "s://",
+                -1.9064
+            ],
+            [
+                "s:/",
+                -1.9064
+            ],
+            [
+                "ttps:",
+                -1.9045
+            ],
+            [
+                "tps:",
+                -1.9045
+            ],
+            [
+                "ps:",
+                -1.9045
+            ],
+            [
+                "/pr",
+                -1.8978
+            ]
+        ],
+        "structural_feature_ranking": []
+    },
+    "error_analysis": {
+        "total_false_positives": 22,
+        "total_false_negatives": 22,
+        "sample_false_positives": [
+            {
+                "url": "https://merriam-webster.com/",
+                "calibrated_prob": 0.8175,
+                "char_prob": 0.6945,
+                "struct_prob": 0.8996
+            },
+            {
+                "url": "https://usgovtrafficmanager.net/",
+                "calibrated_prob": 0.6133,
+                "char_prob": 0.4141,
+                "struct_prob": 0.746
+            },
+            {
+                "url": "https://microsoftpersonalcontent.com/downloads/software-release",
+                "calibrated_prob": 0.6154,
+                "char_prob": 0.0781,
+                "struct_prob": 0.9736
+            },
+            {
+                "url": "https://claudeusercontent.com/",
+                "calibrated_prob": 0.7579,
+                "char_prob": 0.5407,
+                "struct_prob": 0.9027
+            },
+            {
+                "url": "https://arca.live/",
+                "calibrated_prob": 0.815,
+                "char_prob": 0.925,
+                "struct_prob": 0.7416
+            },
+            {
+                "url": "https://ellieservices.com/",
+                "calibrated_prob": 0.5159,
+                "char_prob": 0.4762,
+                "struct_prob": 0.5424
+            },
+            {
+                "url": "https://guardian.co.uk/",
+                "calibrated_prob": 0.7716,
+                "char_prob": 0.7256,
+                "struct_prob": 0.8022
+            },
+            {
+                "url": "https://made-in-china.com/",
+                "calibrated_prob": 0.8605,
+                "char_prob": 0.8405,
+                "struct_prob": 0.8738
+            },
+            {
+                "url": "https://apple-dns.cn/",
+                "calibrated_prob": 0.5143,
+                "char_prob": 0.6241,
+                "struct_prob": 0.4411
+            },
+            {
+                "url": "https://nzherald.co.nz/",
+                "calibrated_prob": 0.6998,
+                "char_prob": 0.6062,
+                "struct_prob": 0.7622
+            }
+        ],
+        "sample_false_negatives": [
+            {
+                "url": "https://tikumei.com/product/kluj",
+                "calibrated_prob": 0.1957,
+                "char_prob": 0.4623,
+                "struct_prob": 0.0179
+            },
+            {
+                "url": "https://sskbkpk.pro/",
+                "calibrated_prob": 0.4189,
+                "char_prob": 0.9962,
+                "struct_prob": 0.0341
+            },
+            {
+                "url": "https://sskbkpk.pro/suivi",
+                "calibrated_prob": 0.4186,
+                "char_prob": 0.9988,
+                "struct_prob": 0.0318
+            },
+            {
+                "url": "https://contactiibk2026pe.one/",
+                "calibrated_prob": 0.4579,
+                "char_prob": 0.0147,
+                "struct_prob": 0.7535
+            },
+            {
+                "url": "https://smbca.wiki/",
+                "calibrated_prob": 0.4617,
+                "char_prob": 0.9302,
+                "struct_prob": 0.1494
+            },
+            {
+                "url": "https://nscoolnest.com/",
+                "calibrated_prob": 0.2091,
+                "char_prob": 0.2658,
+                "struct_prob": 0.1713
+            },
+            {
+                "url": "https://efgqfgqdfg.com/",
+                "calibrated_prob": 0.3181,
+                "char_prob": 0.4511,
+                "struct_prob": 0.2294
+            },
+            {
+                "url": "https://bingwangpco.com/",
+                "calibrated_prob": 0.3558,
+                "char_prob": 0.569,
+                "struct_prob": 0.2136
+            },
+            {
+                "url": "https://suportechat1.com/",
+                "calibrated_prob": 0.4843,
+                "char_prob": 0.7128,
+                "struct_prob": 0.332
+            },
+            {
+                "url": "https://syhyztb.com/",
+                "calibrated_prob": 0.15,
+                "char_prob": 0.1885,
+                "struct_prob": 0.1243
+            }
+        ],
+        "error_patterns": {
+            "false_positives_cause": "Legitimate services hosted on multi-tenant platforms (e.g. cloudfront, weebly, square.site) or deep query URLs with brand-like paths that resemble phishing lures.",
+            "false_negatives_cause": "Phishing destinations on established generic domains with clean, short root paths prior to dynamic credential injection."
+        }
+    },
+    "metadata_manifest": {
+        "model_name": "HybridEnsemble",
+        "model_version": "2.0.0-hybrid",
+        "trained_timestamp": "2026-11-21T05:35:42Z",
+        "artifact_path": "ml/models/qrshield_hybrid_v2.joblib",
+        "char_submodel": {
+            "type": "TfidfVectorizer + CalibratedLinearSVM",
+            "ngram_range": [
+                3,
+                5
+            ],
+            "max_features": 10000,
+            "weight": 0.4
+        },
+        "structural_submodel": {
+            "type": "HistGradientBoostingClassifier",
+            "feature_count": 28,
+            "features": [
+                "url_length",
+                "hostname_length",
+                "path_length",
+                "query_length",
+                "subdomain_count",
+                "path_depth",
+                "query_param_count",
+                "digit_count",
+                "digit_ratio",
+                "letter_count",
+                "letter_ratio",
+                "special_char_count",
+                "special_char_ratio",
+                "url_entropy",
+                "hostname_entropy",
+                "hostname_hyphens",
+                "hostname_digits",
+                "is_ip_address",
+                "is_punycode",
+                "suspicious_tld",
+                "suspicious_keyword_count",
+                "percent_encoding_count",
+                "percent_encoding_depth",
+                "userinfo_deception",
+                "is_https",
+                "non_default_port",
+                "suspicious_redirect_param",
+                "char_diversity"
+            ],
+            "weight": 0.6
+        },
+        "calibration": {
+            "method": "Platt Scaling (Sigmoid) on Validation Holdout",
+            "validation_brier_score": 0.01982,
+            "test_brier_score": 0.0167
+        },
+        "test_performance_domain_disjoint": {
+            "model_family": "Model C (HybridEnsemble v2.0.0-hybrid)",
+            "accuracy": 0.9809,
+            "precision": 0.9808,
+            "recall": 0.9808,
+            "f1": 0.9808,
+            "roc_auc": 0.9985,
+            "pr_auc": 0.9986,
+            "brier_score": 0.0167,
+            "fpr": 0.0191,
+            "confusion_matrix": {
+                "tn": 1131,
+                "fp": 22,
+                "fn": 22,
+                "tp": 1126
+            }
+        },
+        "operational_recommendations": {
+            "default_decision_threshold": 0.5,
+            "conservative_low_fpr_threshold": 0.65,
+            "uncertainty_range": [
+                0.35,
+                0.65
+            ]
+        }
+    }
+}

@@ -1,0 +1,38 @@
+{
+    "domain_disjoint": {
+        "train": {
+            "records": 9989,
+            "unique_domains": 8557,
+            "benign": 5504,
+            "malicious": 4485,
+            "malicious_ratio": 0.449
+        },
+        "val": {
+            "records": 2102,
+            "unique_domains": 1834,
+            "benign": 1140,
+            "malicious": 962,
+            "malicious_ratio": 0.4577
+        },
+        "test": {
+            "records": 2301,
+            "unique_domains": 1834,
+            "benign": 1153,
+            "malicious": 1148,
+            "malicious_ratio": 0.4989
+        },
+        "leakage_audit": {
+            "train_val_domain_overlap": 0,
+            "train_test_domain_overlap": 0,
+            "val_test_domain_overlap": 0,
+            "exact_url_leakage": 0
+        }
+    },
+    "random_test_baseline": {
+        "records": 2159,
+        "unique_domains": 1977,
+        "benign": 1170,
+        "malicious": 989,
+        "domain_overlap_with_train": 1370
+    }
+}

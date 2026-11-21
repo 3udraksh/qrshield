@@ -10,6 +10,13 @@ ML_MODEL_PATH = os.path.join(
     "qrshield_model.joblib"
 )
 
+HYBRID_MODEL_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "ml",
+    "models",
+    "qrshield_hybrid_v2.joblib"
+)
+
 SUSPICIOUS_KEYWORDS = [
     "login",
     "signin",

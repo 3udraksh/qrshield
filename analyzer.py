@@ -26,6 +26,7 @@ from google import genai
 # Re-export constants
 from qrshield.constants import (
     ML_MODEL_PATH,
+    HYBRID_MODEL_PATH,
     SUSPICIOUS_KEYWORDS,
     SUSPICIOUS_TLDS,
     REDIRECT_STATUS_CODES
@@ -96,6 +97,7 @@ from qrshield.reputation import (
 # Re-export ML analysis
 from qrshield.ml import (
     load_ml_model,
+    load_hybrid_model,
     extract_ml_features,
     analyze_ml_prediction,
     evaluate_ml_consensus
@@ -121,6 +123,7 @@ from qrshield.orchestrator import analyze_url
 
 __all__ = [
     "ML_MODEL_PATH",
+    "HYBRID_MODEL_PATH",
     "SUSPICIOUS_KEYWORDS",
     "SUSPICIOUS_TLDS",
     "REDIRECT_STATUS_CODES",
@@ -167,6 +170,7 @@ __all__ = [
     "analyze_reputation",
     "evaluate_reputation_risk",
     "load_ml_model",
+    "load_hybrid_model",
     "extract_ml_features",
     "analyze_ml_prediction",
     "evaluate_ml_consensus",

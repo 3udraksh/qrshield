@@ -720,7 +720,10 @@ def analyze_url(url):
     })
 
     # Machine Learning Analysis & Consensus
-    ml_analysis = analyze_ml_prediction({"features": features})
+    ml_analysis = analyze_ml_prediction({
+        "url": normalized_url,
+        "features": features
+    })
     ml_consensus = evaluate_ml_consensus(score, ml_analysis)
 
     if obfuscation_analysis["count"] >= 4:
